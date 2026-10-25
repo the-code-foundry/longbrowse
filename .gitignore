@@ -1,0 +1,8 @@
+node_modules/
+dist/
+/data/
+/profiles/
+plugins/
+local/
+.env
+*.local.ini

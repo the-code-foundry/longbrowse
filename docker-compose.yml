@@ -1,0 +1,38 @@
+# Override host ports with LONGBROWSE_*PORT in a local .env (gitignored).
+# Everything binds loopback by default: the MCP endpoint, the noVNC view and the
+# REST API are all full browser control. Set tokens before exposing any of them.
+services:
+  longbrowse:
+    build: .
+    image: longbrowse-core
+    container_name: longbrowse
+    ports:
+      - "127.0.0.1:${LONGBROWSE_PORT:-41931}:8931"
+      # live view of the headful browser: http://127.0.0.1:41932/vnc.html
+      - "127.0.0.1:${LONGBROWSE_VNC_PORT:-41932}:6080"
+      # REST API + status page; bearer auth when API_TOKEN is set
+      - "127.0.0.1:${LONGBROWSE_API_PORT:-41933}:8932"
+    volumes:
+      - ./plugins:/plugins
+      - profiles:/profiles
+      - data:/data
+    environment:
+      - HEADLESS=${HEADLESS:-0}
+      - KIOSK=${KIOSK:-1}
+      - SCREEN=${SCREEN:-1280x720}
+      - MAX_TABS=${MAX_TABS:-3}
+      - STICKY_TAB=${STICKY_TAB:-1}
+      - MCP_TOKEN=${MCP_TOKEN:-}
+      - API_ENABLED=${API_ENABLED:-1}
+      - API_TOKEN=${API_TOKEN:-}
+      - API_PLUGIN_EDITING_ALLOWED=${API_PLUGIN_EDITING_ALLOWED:-0}
+      - MCP_PLUGIN_EDITING_ALLOWED=${MCP_PLUGIN_EDITING_ALLOWED:-0}
+      - VNC_PASSWORD=${VNC_PASSWORD:-}
+      - EGRESS=${EGRESS:-off}
+    restart: unless-stopped
+    mem_limit: 2g
+    shm_size: 512m
+
+volumes:
+  profiles:
+  data:
