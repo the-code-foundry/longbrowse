@@ -83,6 +83,10 @@ try {
   console.log('integration: ok');
 } finally {
   srv.kill('SIGTERM');
-  // Chromium may still be flushing the profile: retry the rm instead of failing the run
-  rmSync(tmp, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
+  // Chromium may still be flushing the profile: it recreates files between rm
+  // retries, so loop with real waits instead of failing the run
+  for (let i = 0; i < 20; i++) {
+    try { rmSync(tmp, { recursive: true, force: true }); break; }
+    catch { await new Promise((r) => setTimeout(r, 300)); }
+  }
 }

@@ -19,6 +19,8 @@ export const cfg = {
   eventsKeep: parseInt(process.env.EVENTS_KEEP ?? '10000', 10), // rows kept per plugin
   egressMode: process.env.EGRESS ?? 'off', // off | log | enforce (SOCKS5 per profile)
   watchdog: process.env.WATCHDOG !== '0',
+  pluginPoll: parseFloat(process.env.PLUGIN_POLL ?? '5'), // seconds between plugin-folder mtime rescans (hot-reload fallback); 0 = disabled
+  pluginWatch: process.env.PLUGIN_WATCH !== '0', // 0 = no inotify watcher (rely on the poll and/or plugins_rescan)
   humanBaseApm: parseFloat(process.env.HUMAN_BASE_APM ?? '8'),
   humanCapApm: parseFloat(process.env.HUMAN_CAP_APM ?? '20'),
 };

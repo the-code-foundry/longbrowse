@@ -26,8 +26,9 @@ export function parseIni(text) {
 }
 
 export class Loader {
-  constructor({ pluginsDir, registry, contexts, events, help, api, notifications, human = null, egress = null, dataDir = '/data', log = console.error }) {
-    Object.assign(this, { pluginsDir, registry, contexts, events, help, api, notifications, human, egress, dataDir, log });
+  constructor({ pluginsDir, registry, contexts, events, help, api, notifications, human = null, egress = null, dataDir = '/data', log = console.error, pollSeconds = 5, watchEnabled = true }) {
+    Object.assign(this, { pluginsDir, registry, contexts, events, help, api, notifications, human, egress, dataDir, log, pollSeconds, watchEnabled });
+    this.mtimes = new Map(); // plugin folder -> newest code mtime (settings files excluded)
     this.plugins = new Map(); // name -> {toolNames: [], abort: AbortController}
   }
 
@@ -250,35 +251,55 @@ export class Loader {
         setTimeout(arm, 5000);
       }
     };
-    arm();
-    // poll fallback: newest code mtime per plugin folder (settings files excluded)
-    const folderMtime = (dir) => {
-      let max = 0;
-      for (const f of readdirSync(dir, { withFileTypes: true })) {
-        if (SETTINGS_FILE_RX.test(f.name)) continue;
-        const p = join(dir, f.name);
-        try { max = Math.max(max, f.isDirectory() ? folderMtime(p) : statSync(p).mtimeMs); } catch { /* raced a delete */ }
+    if (this.watchEnabled) arm(); // PLUGIN_WATCH=0: no inotify (it can be absent or lossy)
+    this.rescan(true); // prime mtimes without reloading anything
+    if (this.pollSeconds > 0) { // PLUGIN_POLL=0: no periodic rescans
+      setInterval(() => {
+        const r = this.rescan();
+        for (const t of [...r.reloaded, ...r.unloaded]) this.log(`plugin ${t}: change found by poll`);
+      }, this.pollSeconds * 1000).unref();
+    }
+  }
+
+  #folderMtime(dir) {
+    let max = 0;
+    for (const f of readdirSync(dir, { withFileTypes: true })) {
+      if (SETTINGS_FILE_RX.test(f.name)) continue;
+      const p = join(dir, f.name);
+      try { max = Math.max(max, f.isDirectory() ? this.#folderMtime(p) : statSync(p).mtimeMs); } catch { /* raced a delete */ }
+    }
+    return max;
+  }
+
+  // Compare every plugin folder's newest code mtime with the last known one and
+  // load/reload/unload accordingly. The poll calls this; the plugins_rescan tool
+  // exposes it, so a deployment can run with no local watching at all
+  // (PLUGIN_WATCH=0 PLUGIN_POLL=0) and reload purely on demand.
+  rescan(prime = false) {
+    const out = { loaded: [], reloaded: [], unloaded: [] };
+    try {
+      const seen = new Set();
+      for (const f of readdirSync(this.pluginsDir, { withFileTypes: true })) {
+        if (!f.isDirectory()) continue;
+        const top = f.name;
+        const dir = join(this.pluginsDir, top);
+        if (!existsSync(join(dir, 'manifest.json'))) continue;
+        seen.add(top);
+        const m = this.#folderMtime(dir);
+        const known = this.mtimes.get(top);
+        this.mtimes.set(top, m);
+        if (prime) continue;
+        const isLoaded = [...this.plugins.values()].some((st) => st.folder === top);
+        if (!isLoaded) out.loaded.push(top);
+        else if (known !== undefined && known !== m) out.reloaded.push(top);
+        else continue;
+        this.load(dir).catch((e) => this.log(`plugin ${top}: reload failed: ${e.message}`));
       }
-      return max;
-    };
-    const mtimes = new Map();
-    let primed = false;
-    setInterval(() => {
-      try {
-        const seen = new Set();
-        for (const f of readdirSync(this.pluginsDir, { withFileTypes: true })) {
-          if (!f.isDirectory()) continue;
-          seen.add(f.name);
-          const m = folderMtime(join(this.pluginsDir, f.name));
-          if (primed && mtimes.get(f.name) !== m) {
-            this.log(`plugin ${f.name}: change found by poll (watcher missed it)`);
-            schedule(f.name);
-          }
-          mtimes.set(f.name, m);
-        }
-        for (const top of mtimes.keys()) if (!seen.has(top)) { mtimes.delete(top); if (primed) schedule(top); }
-        primed = true;
-      } catch { /* plugins dir vanished mid-scan; next tick */ }
-    }, 5000).unref();
+      for (const [name, st] of [...this.plugins]) {
+        if (!seen.has(st.folder)) { out.unloaded.push(name); this.unload(name); }
+      }
+      for (const top of [...this.mtimes.keys()]) if (!seen.has(top)) this.mtimes.delete(top);
+    } catch { /* plugins dir vanished mid-scan */ }
+    return out;
   }
 }

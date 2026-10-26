@@ -20,7 +20,7 @@ export function registerGenericTools(registry, contexts, events, { dataDir }, he
   // calls fail until session_unlock or ttl expiry. Advisory but enforced here, so
   // two agents cannot interleave clicks on the same browser.
   const lock = { owner: null, token: null, expires: 0 };
-  const LOCK_EXEMPT = new Set(['session_lock', 'session_unlock', 'session_status', 'help', 'events_tail']);
+  const LOCK_EXEMPT = new Set(['session_lock', 'session_unlock', 'session_status', 'help', 'events_tail', 'plugins_rescan']);
   registry.intercept(({ raw, args }) => {
     if (LOCK_EXEMPT.has(raw)) return;
     if (!lock.token || Date.now() > lock.expires) return;

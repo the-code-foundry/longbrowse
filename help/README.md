@@ -61,6 +61,10 @@ The snapshot sees the whole DOM, including content scrolled out of view.
 - Human pacing: plugins can space visible actions with `api.human.ms()/delay()` — a per-profile
   wave-drifting rate (HUMAN_BASE_APM, default 8 actions/min) with jitter and backpressure above
   HUMAN_CAP_APM (default 20/min).
+- Hot reload channels: inotify watcher (PLUGIN_WATCH=0 disables - some filesystems lose or lack
+  inotify), an mtime poll every PLUGIN_POLL seconds (default 5, 0 disables), and the
+  `plugins_rescan` tool (MCP/REST) forcing a rescan now. With both envs 0, reloads happen only
+  on demand via the tool.
 - Session lock (`session_lock` / `session_unlock` / `session_status`): one driver at a time.
   `session_lock {owner, ttl?}` returns a token; while locked every other caller's tool calls
   fail (help/events_tail stay open), the holder passes `_lock: <token>` in each call (stripped
