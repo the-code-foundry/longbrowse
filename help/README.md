@@ -53,6 +53,9 @@ The snapshot sees the whole DOM, including content scrolled out of view.
 
 - Auth knobs (all optional envs): MCP_TOKEN (bearer on /mcp), API_TOKEN (bearer on the API
   port), VNC_PASSWORD (noVNC/VNC password, first 8 chars count). Unset = open.
+- TOOL_PREFIX (default empty): prepended to every tool name (generic and plugin) — several
+  longbrowse containers can register behind one MCP aggregator without collisions. REST
+  `/api/tool/<name>` uses the prefixed name too.
 - Watchdog (WATCHDOG=1 default): relaunches a dead browser of autostart plugins and reloads
   crashed pages; appends a `context_restarted` event to the plugin's stream.
 - Human pacing: plugins can space visible actions with `api.human.ms()/delay()` — a per-profile

@@ -2,7 +2,11 @@
 // plugins add and remove tools at run time; the registry is the single source both
 // sides sync against. Listeners are live McpServer instances.
 export class ToolRegistry {
-  constructor() {
+  // prefix (TOOL_PREFIX) namespaces every tool at registration: several containers
+  // can sit behind one MCP aggregator without name collisions. External callers
+  // (MCP, REST /api/tool/<name>) use the prefixed name.
+  constructor(prefix = '') {
+    this.prefix = prefix;
     this.tools = new Map(); // name -> {description, inputSchema, handler}
     this.servers = new Map(); // McpServer -> Map(name -> RegisteredTool handle)
     this.callHooks = new Set(); // observers of every tool call
@@ -15,6 +19,7 @@ export class ToolRegistry {
   }
 
   add(name, { description, inputSchema = {} }, handler) {
+    name = this.prefix + name;
     if (this.tools.has(name)) throw new Error(`tool already registered: ${name}`);
     const def = { description, inputSchema, handler };
     this.tools.set(name, def);
@@ -24,6 +29,7 @@ export class ToolRegistry {
   }
 
   remove(name) {
+    name = this.prefix + name;
     if (!this.tools.delete(name)) return;
     for (const handles of this.servers.values()) {
       handles.get(name)?.remove();

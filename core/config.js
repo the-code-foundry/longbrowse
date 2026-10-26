@@ -9,6 +9,7 @@ export const cfg = {
   maxTabs: parseInt(process.env.MAX_TABS ?? '3', 10),
   stickyTab: process.env.STICKY_TAB !== '0',
   mcpToken: process.env.MCP_TOKEN ?? '', // bearer on /mcp; empty = no auth
+  toolPrefix: process.env.TOOL_PREFIX ?? '', // namespaces every tool name (e.g. 'cg_') for multi-container setups
   apiEnabled: process.env.API_ENABLED !== '0',
   apiPort: parseInt(process.env.API_PORT ?? '8932', 10),
   apiToken: process.env.API_TOKEN ?? '', // empty = no auth

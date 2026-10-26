@@ -23,7 +23,7 @@ import { z } from 'zod';
 import { join } from 'node:path';
 
 const started = Date.now();
-const registry = new ToolRegistry();
+const registry = new ToolRegistry(cfg.toolPrefix);
 const notifications = new NotificationStore();
 const proxies = new ProxyStore(join(cfg.dataDir, 'proxies.json'));
 const events = new EventStore(join(cfg.dataDir, 'events'), { keep: cfg.eventsKeep });

@@ -57,6 +57,19 @@ import { Egress, hostAllowed } from '../core/egress.js';
   reg.detach(s2);
 }
 
+// ToolRegistry prefix: names exposed and called prefixed, remove takes the bare name
+{
+  const reg = new ToolRegistry('cg_');
+  const calls = [];
+  reg.attach({ registerTool: (name) => { calls.push(`add:${name}`); return { remove: () => calls.push(`rm:${name}`) }; } });
+  reg.add('t1', { description: 'd' }, async () => ({ content: [{ type: 'text', text: 'ok' }] }));
+  assert.deepEqual(calls, ['add:cg_t1']);
+  assert.equal((await reg.call('cg_t1')).content[0].text, 'ok');
+  assert.equal((await reg.call('t1')).isError, true); // bare name is not exposed
+  reg.remove('t1');
+  assert.deepEqual(calls, ['add:cg_t1', 'rm:cg_t1']);
+}
+
 // DiskQueue: push/take in order, empty -> null
 {
   const dir = mkdtempSync(join(tmpdir(), 'lb-q-'));
