@@ -30,6 +30,9 @@ services:
       - MCP_PLUGIN_EDITING_ALLOWED=${MCP_PLUGIN_EDITING_ALLOWED:-0}
       - VNC_PASSWORD=${VNC_PASSWORD:-}
       - EGRESS=${EGRESS:-off}
+      - TIMEZONE=${TIMEZONE:-}
+      - LOCALE=${LOCALE:-}
+      - STEALTH_PROFILES=${STEALTH_PROFILES:-}
     restart: unless-stopped
     mem_limit: 2g
     shm_size: 512m

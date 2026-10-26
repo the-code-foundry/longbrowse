@@ -83,5 +83,6 @@ try {
   console.log('integration: ok');
 } finally {
   srv.kill('SIGTERM');
-  rmSync(tmp, { recursive: true, force: true });
+  // Chromium may still be flushing the profile: retry the rm instead of failing the run
+  rmSync(tmp, { recursive: true, force: true, maxRetries: 10, retryDelay: 200 });
 }

@@ -8,7 +8,7 @@ cd "$(dirname "$0")/.."
 
 node tests/unit.mjs
 
-if node -e "const {chromium}=require('playwright'); require('fs').existsSync(chromium.executablePath()) || process.exit(1)" 2>/dev/null; then
+if node -e "const {chromium}=require('rebrowser-playwright'); require('fs').existsSync(chromium.executablePath()) || process.exit(1)" 2>/dev/null; then
   node tests/integration.mjs
 elif docker image inspect longbrowse-core >/dev/null 2>&1; then
   # no local Chromium: run the integration test inside the built image

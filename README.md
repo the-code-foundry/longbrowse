@@ -73,6 +73,7 @@ layer, not the loader.
 All knobs are environment variables (see `docker-compose.yml` and `core/config.js`):
 `HEADLESS`, `KIOSK`, `SCREEN`, `MAX_TABS`, `STICKY_TAB`, `MCP_TOKEN`, `API_TOKEN`,
 `TOOL_PREFIX` (namespace all tool names, for several containers behind one MCP aggregator),
+`TIMEZONE`, `LOCALE`, `STEALTH_PROFILES` (fingerprint alignment; see help/README.md),
 `VNC_PASSWORD`, `EGRESS` (`off|log|enforce`), `WATCHDOG`, `EVENTS_KEEP`, `HUMAN_BASE_APM`,
 `HUMAN_CAP_APM`, `API_PLUGIN_EDITING_ALLOWED`, `MCP_PLUGIN_EDITING_ALLOWED`.
 

@@ -1,6 +1,6 @@
 // One persistent Chromium context per profile name. Separate profiles keep logins
 // (mail, jira, ...) from ever sharing cookies or storage.
-import { chromium } from 'playwright';
+import { chromium } from 'rebrowser-playwright'; // playwright with the CDP Runtime.enable leak patched (bot-detection)
 import { mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';
 import { NOTIFICATION_SHIM } from './notifications.js';
@@ -55,6 +55,7 @@ export class Contexts {
     const kiosk = process.env.KIOSK === '1';
     const [w, h] = (process.env.SCREEN ?? '1280x720').split('x').map(Number);
     const args = kiosk ? ['--kiosk', '--window-position=0,0', `--window-size=${w},${h}`] : [];
+    args.push('--disable-blink-features=AutomationControlled'); // navigator.webdriver stays false
     // user-set proxy wins; otherwise egress (log/enforce) interposes its SOCKS5
     // listener, and hostnames resolve at the proxy so DNS cannot leak around it
     let proxy = this.proxies?.get(profile);
@@ -69,6 +70,10 @@ export class Contexts {
       viewport: kiosk ? null : { width: w, height: h },
       args,
       ...(proxy && { proxy }),
+      // fingerprint alignment: match the browser's clock and language to the egress
+      // IP's region instead of the container's UTC/en-US defaults
+      ...(process.env.TIMEZONE && { timezoneId: process.env.TIMEZONE }),
+      ...(process.env.LOCALE && { locale: process.env.LOCALE }),
     });
     // a crashed renderer never recovers by itself: reload it
     const wireCrash = (p) => p.on('crash', () => {
@@ -77,7 +82,10 @@ export class Contexts {
     });
     for (const p of ctx.pages()) wireCrash(p);
     ctx.on('page', wireCrash);
-    if (this.notifications) {
+    // the shim overrides window.Notification with a non-native function - a
+    // detection tell; profiles listed in STEALTH_PROFILES (csv, or '*') skip it
+    const stealth = (process.env.STEALTH_PROFILES ?? '').split(',').map((s) => s.trim());
+    if (this.notifications && !stealth.includes(profile) && !stealth.includes('*')) {
       // capture Web Notifications: permission looks granted, calls land in the store
       await ctx.grantPermissions(['notifications']);
       await ctx.exposeBinding('__lbNotification', ({ page }, note) => {

@@ -61,6 +61,11 @@ The snapshot sees the whole DOM, including content scrolled out of view.
 - Human pacing: plugins can space visible actions with `api.human.ms()/delay()` — a per-profile
   wave-drifting rate (HUMAN_BASE_APM, default 8 actions/min) with jitter and backpressure above
   HUMAN_CAP_APM (default 20/min).
+- Stealth: Chromium is driven through rebrowser-playwright (CDP Runtime.enable leak patched) and
+  launches with `--disable-blink-features=AutomationControlled` (navigator.webdriver false).
+  TIMEZONE / LOCALE envs align the browser clock and language with the egress IP.
+  STEALTH_PROFILES (csv of profiles, or `*`) skips the window.Notification capture shim — a
+  non-native override a bot check can spot — trading notification capture for stealth.
 
 ## Help
 
