@@ -7,7 +7,7 @@ is set, every request needs `Authorization: Bearer <token>`; unset = open.
   profiles with their tabs, routes, help pages, MCP session count.
 - `POST /api/tool/<name>` — call ANY MCP tool, body = the tool's arguments as JSON, response =
   the MCP result (`{content: [...], isError?}`). Example:
-  `curl -X POST :41933/api/tool/snapshot -d '{"profile":"whatsapp","max_lines":20}'`
+  `curl -X POST :41933/api/tool/snapshot -d '{"profile":"mail","max_lines":20}'`
 - `POST /api/<plugin>/<route>` — endpoints a plugin registered with `api.http.route`.
 - Plugin editing, only when `API_PLUGIN_EDITING_ALLOWED=1`:
   - `GET /api/plugins` — all plugins and files

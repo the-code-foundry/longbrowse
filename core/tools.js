@@ -89,7 +89,7 @@ export function registerGenericTools(registry, contexts, events, { dataDir }, he
   });
 
   registry.add('help', {
-    description: 'Self-documentation. No args: main usage page + list of all help pages (disk and plugin-provided). With path: that page, e.g. {path: "plugins.md"} or {path: "whatsapp/usage.md"}.',
+    description: 'Self-documentation. No args: main usage page + list of all help pages (disk and plugin-provided). With path: that page, e.g. {path: "plugins.md"} or {path: "mail/usage.md"}.',
     inputSchema: { path: z.string().optional() },
   }, async (a) => {
     if (a.path) return text(help.read(a.path));

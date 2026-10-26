@@ -398,11 +398,11 @@ import { Egress, hostAllowed } from '../core/egress.js';
 
 // Egress: allowlist matching (exact, wildcard suffix, ip), rules persist
 {
-  assert.ok(hostAllowed('web.whatsapp.com', ['web.whatsapp.com']));
-  assert.ok(hostAllowed('cdn.whatsapp.net', ['*.whatsapp.net']));
-  assert.ok(hostAllowed('whatsapp.net', ['*.whatsapp.net'])); // bare domain matches its own wildcard
-  assert.ok(!hostAllowed('evil.com', ['*.whatsapp.net', 'web.whatsapp.com']));
-  assert.ok(!hostAllowed('notwhatsapp.net', ['*.whatsapp.net']));
+  assert.ok(hostAllowed('chat.example.com', ['chat.example.com']));
+  assert.ok(hostAllowed('cdn.example.net', ['*.example.net']));
+  assert.ok(hostAllowed('example.net', ['*.example.net'])); // bare domain matches its own wildcard
+  assert.ok(!hostAllowed('evil.com', ['*.example.net', 'chat.example.com']));
+  assert.ok(!hostAllowed('notexample.net', ['*.example.net']));
   assert.ok(hostAllowed('1.2.3.4', ['1.2.3.4']));
   const dir = mkdtempSync(join(tmpdir(), 'lb-eg-'));
   const f = join(dir, 'egress.json');

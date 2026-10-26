@@ -1,5 +1,5 @@
 // One persistent Chromium context per profile name. Separate profiles keep logins
-// (whatsapp, chatgpt, ...) from ever sharing cookies or storage.
+// (mail, jira, ...) from ever sharing cookies or storage.
 import { chromium } from 'playwright';
 import { mkdirSync, rmSync } from 'node:fs';
 import { join } from 'node:path';

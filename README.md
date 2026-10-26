@@ -3,8 +3,9 @@
 A persistent browser for AI agents: one container with Chromium (Playwright), an MCP server
 (streamable HTTP), a REST API, a live noVNC view, and hot-reloaded site plugins.
 
-The idea: your agent keeps long-lived, logged-in browser sessions (WhatsApp Web, webmail, any
-site), and site-specific logic lives in small plugin folders you can edit while the server runs.
+The idea: your agent keeps long-lived, logged-in browser sessions (web chat apps, webmail,
+Jira, Confluence — any site that allows automation), and site-specific logic lives in small
+plugin folders you can edit while the server runs.
 Each plugin gets its own browser profile — logins never bleed between sites — and registers its
 own MCP tools next to the generic browser tools.
 

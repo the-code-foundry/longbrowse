@@ -2,7 +2,7 @@
 
 Browser automation MCP server. Chromium runs headful in this container; every tool takes an
 optional `profile` (default `"default"`) — a profile is an isolated browser with its own cookies
-and logins, one per site plugin (e.g. `whatsapp`). Don't cross profiles: a site's tools belong to
+and logins, one per site plugin (e.g. `mail`). Don't cross profiles: a site's tools belong to
 its profile.
 
 ## Reading a page
