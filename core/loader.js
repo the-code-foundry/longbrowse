@@ -213,14 +213,14 @@ export class Loader {
     }, periodMs).unref();
   }
 
-  // Reload a plugin folder when anything in it changes (debounced).
+  // Reload a plugin folder when anything in it changes (debounced). Linux
+  // recursive fs.watch is inotify-based and lossy - directory churn can silently
+  // drop the watch for a sibling folder - so the watcher re-arms on error AND a
+  // 5s mtime poll catches anything inotify loses.
   watch() {
     if (!existsSync(this.pluginsDir)) return;
-    let timers = new Map();
-    fsWatch(this.pluginsDir, { recursive: true }, (_ev, file) => {
-      const top = (file ?? '').split('/')[0];
-      if (!top) return;
-      if (SETTINGS_FILE_RX.test(basename(file ?? ''))) return; // settings writes are not code changes
+    const timers = new Map();
+    const schedule = (top) => {
       clearTimeout(timers.get(top));
       timers.set(top, setTimeout(() => {
         const dir = join(this.pluginsDir, top);
@@ -231,6 +231,54 @@ export class Loader {
           for (const [name, st] of this.plugins) if (st.folder === top) this.unload(name);
         }
       }, 500));
-    });
+    };
+    const arm = () => {
+      try {
+        this.watcher?.close();
+        this.watcher = fsWatch(this.pluginsDir, { recursive: true }, (_ev, file) => {
+          const top = (file ?? '').split('/')[0];
+          if (!top) return;
+          if (SETTINGS_FILE_RX.test(basename(file ?? ''))) return; // settings writes are not code changes
+          schedule(top);
+        });
+        this.watcher.on('error', (e) => {
+          this.log(`plugin watcher error: ${e.message}; re-arming`);
+          setTimeout(arm, 1000);
+        });
+      } catch (e) {
+        this.log(`plugin watcher failed to start: ${e.message}; retrying`);
+        setTimeout(arm, 5000);
+      }
+    };
+    arm();
+    // poll fallback: newest code mtime per plugin folder (settings files excluded)
+    const folderMtime = (dir) => {
+      let max = 0;
+      for (const f of readdirSync(dir, { withFileTypes: true })) {
+        if (SETTINGS_FILE_RX.test(f.name)) continue;
+        const p = join(dir, f.name);
+        try { max = Math.max(max, f.isDirectory() ? folderMtime(p) : statSync(p).mtimeMs); } catch { /* raced a delete */ }
+      }
+      return max;
+    };
+    const mtimes = new Map();
+    let primed = false;
+    setInterval(() => {
+      try {
+        const seen = new Set();
+        for (const f of readdirSync(this.pluginsDir, { withFileTypes: true })) {
+          if (!f.isDirectory()) continue;
+          seen.add(f.name);
+          const m = folderMtime(join(this.pluginsDir, f.name));
+          if (primed && mtimes.get(f.name) !== m) {
+            this.log(`plugin ${f.name}: change found by poll (watcher missed it)`);
+            schedule(f.name);
+          }
+          mtimes.set(f.name, m);
+        }
+        for (const top of mtimes.keys()) if (!seen.has(top)) { mtimes.delete(top); if (primed) schedule(top); }
+        primed = true;
+      } catch { /* plugins dir vanished mid-scan; next tick */ }
+    }, 5000).unref();
   }
 }
