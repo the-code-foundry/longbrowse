@@ -1,0 +1,5 @@
+{
+  "name": "example",
+  "profile": "example",
+  "start_url": "data:text/html,<h1 id='greet'>hello from example</h1><input id='box'>"
+}
