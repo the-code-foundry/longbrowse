@@ -93,6 +93,26 @@ import { Egress, hostAllowed } from '../core/egress.js';
   assert.ok(!calls.includes('add:t2'));
 }
 
+// ToolRegistry interceptors: priority order, arg rewrite, short-circuit success and
+// error, throwing interceptor skipped, unsubscribe works, raw name under prefix
+{
+  const reg = new ToolRegistry('p_');
+  const seen = [];
+  reg.add('echo', { description: 'd' }, async (a) => ({ content: [{ type: 'text', text: `echo:${a.v}` }] }));
+  reg.intercept(({ raw, args }) => { seen.push(`b:${raw}:${args.v}`); }, 200); // runs second despite earlier registration
+  reg.intercept(({ args }) => { seen.push(`a:${args.v}`); return { args: { v: args.v + 1 } }; }, 50);
+  reg.intercept(() => { throw new Error('buggy'); }, 60); // must be skipped
+  assert.equal((await reg.call('p_echo', { v: 1 })).content[0].text, 'echo:2');
+  assert.deepEqual(seen, ['a:1', 'b:echo:2']); // priority 50 first, rewrite visible downstream
+  const off = reg.intercept(({ args }) => (args.v === 9 ? { error: 'nine is blocked' } : { result: { content: [{ type: 'text', text: 'replaced' }] } }), 10);
+  const blocked = await reg.call('p_echo', { v: 9 });
+  assert.equal(blocked.isError, true);
+  assert.match(blocked.content[0].text, /nine is blocked/);
+  assert.equal((await reg.call('p_echo', { v: 3 })).content[0].text, 'replaced');
+  off();
+  assert.equal((await reg.call('p_echo', { v: 3 })).content[0].text, 'echo:4');
+}
+
 // DiskQueue: push/take in order, empty -> null
 {
   const dir = mkdtempSync(join(tmpdir(), 'lb-q-'));

@@ -25,6 +25,10 @@ HTML string; `/ui` lists all pages and `/` redirects there once any page exists)
 is allowed automatically at load), `tools.hide(true | [names])` / `tools.unhide(...)` (pull core
 tools off the MCP surface while this plugin is loaded — `true` = the raw browser set; manifest
 `hide_core: true | [names]` does it at load; refcounted, restored at unload, REST unaffected),
+`tools.intercept(fn, priority?)` (run before every tool call: `fn({tool, raw, args})` returns
+nothing = continue, `{args}` = rewrite, `{result}` = answer the call, `{error: "msg"}` = fail it;
+lower priority first, default 100; several interceptors chain; replace a call by returning the
+result of another one; auto-unregistered at unload),
 `manifest`, `log`.
 Plugins import nothing from node_modules; node builtins (`node:fs`, `node:sqlite`, ...) and
 global `fetch` are fine.

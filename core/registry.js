@@ -11,6 +11,29 @@ export class ToolRegistry {
     this.servers = new Map(); // McpServer -> Map(name -> RegisteredTool handle)
     this.callHooks = new Set(); // observers of every tool call
     this.hiddenCount = new Map(); // name -> how many plugins hide it (refcount)
+    this.interceptors = []; // {priority, seq, fn} sorted: lower priority first, then registration order
+    this.#interceptorSeq = 0;
+  }
+
+  #interceptorSeq;
+
+  // Intercept every tool call before its handler runs. fn({tool, raw, args}) — tool is
+  // the exposed (prefixed) name, raw the unprefixed one — returns:
+  //   nothing            -> continue to the next interceptor unchanged
+  //   {args}             -> continue with replaced args
+  //   {result}           -> stop: return this MCP result as the call's success
+  //   {error: "msg"}     -> stop: return an isError result
+  // Replacing a call = intercepting it and returning the result of registry.call(other).
+  // Lower priority runs first (default 100). A throwing interceptor is skipped.
+  // Returns unsubscribe.
+  intercept(fn, priority = 100) {
+    const entry = { priority, seq: this.#interceptorSeq++, fn };
+    this.interceptors.push(entry);
+    this.interceptors.sort((a, b) => a.priority - b.priority || a.seq - b.seq);
+    return () => {
+      const i = this.interceptors.indexOf(entry);
+      if (i >= 0) this.interceptors.splice(i, 1);
+    };
   }
 
   #isHidden(name) {
@@ -93,14 +116,24 @@ export class ToolRegistry {
 
   async #invoke(name, def, args) {
     let error;
+    args = args ?? {};
     try {
-      return await def.handler(args ?? {});
+      const raw = this.prefix && name.startsWith(this.prefix) ? name.slice(this.prefix.length) : name;
+      for (const { fn } of [...this.interceptors]) {
+        let r;
+        try { r = await fn({ tool: name, raw, args }); } catch { continue; } // interceptor must not break calls
+        if (!r) continue;
+        if (r.error !== undefined) { error = String(r.error); return { isError: true, content: [{ type: 'text', text: `${name}: ${r.error}` }] }; }
+        if (r.result !== undefined) return r.result;
+        if (r.args !== undefined) args = r.args;
+      }
+      return await def.handler(args);
     } catch (e) {
       error = e.message;
       return { isError: true, content: [{ type: 'text', text: `${name}: ${e.message}` }] };
     } finally {
       for (const fn of this.callHooks) {
-        try { fn({ tool: name, args: args ?? {}, error }); } catch { /* observer must not break calls */ }
+        try { fn({ tool: name, args, error }); } catch { /* observer must not break calls */ }
       }
     }
   }

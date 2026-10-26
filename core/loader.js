@@ -146,6 +146,14 @@ export class Loader {
             if (i >= 0) state.hiddenNames.splice(i, 1);
           }
         },
+        // intercept every tool call before it runs: fn({tool, raw, args}) returns
+        // nothing (continue) | {args} (rewrite) | {result} (answer) | {error}.
+        // Lower priority first (default 100). Unregistered at unload.
+        intercept: (fn, priority) => {
+          const off = this.registry.intercept(fn, priority);
+          state.abort.signal.addEventListener('abort', off, { once: true });
+          return off;
+        },
       },
       log: (msg) => this.log(`[${name}] ${msg}`),
     };
