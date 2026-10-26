@@ -10,6 +10,38 @@ export class ToolRegistry {
     this.tools = new Map(); // name -> {description, inputSchema, handler}
     this.servers = new Map(); // McpServer -> Map(name -> RegisteredTool handle)
     this.callHooks = new Set(); // observers of every tool call
+    this.hiddenCount = new Map(); // name -> how many plugins hide it (refcount)
+  }
+
+  #isHidden(name) {
+    return (this.hiddenCount.get(name) ?? 0) > 0;
+  }
+
+  // Hide a tool from MCP sessions (tools/list and calls). registry.call — the REST
+  // path — still works: hiding shapes the agent surface, it is not auth. Refcounted:
+  // the tool reappears when every hider has unhidden. Hiding a name that is not
+  // registered yet is fine; it applies when the tool arrives.
+  hide(name) {
+    name = this.prefix + name;
+    const n = (this.hiddenCount.get(name) ?? 0) + 1;
+    this.hiddenCount.set(name, n);
+    if (n > 1) return;
+    for (const handles of this.servers.values()) {
+      handles.get(name)?.remove();
+      handles.delete(name);
+    }
+  }
+
+  unhide(name) {
+    name = this.prefix + name;
+    const n = this.hiddenCount.get(name) ?? 0;
+    if (n > 1) { this.hiddenCount.set(name, n - 1); return; }
+    this.hiddenCount.delete(name);
+    const def = this.tools.get(name);
+    if (!def) return;
+    for (const [server, handles] of this.servers) {
+      if (!handles.has(name)) handles.set(name, this.#register(server, name, def));
+    }
   }
 
   // Observe tool calls: fn({tool, args, error?}) fires after each call. Returns unsubscribe.
@@ -23,6 +55,7 @@ export class ToolRegistry {
     if (this.tools.has(name)) throw new Error(`tool already registered: ${name}`);
     const def = { description, inputSchema, handler };
     this.tools.set(name, def);
+    if (this.#isHidden(name)) return;
     for (const [server, handles] of this.servers) {
       handles.set(name, this.#register(server, name, def));
     }
@@ -40,7 +73,9 @@ export class ToolRegistry {
   // Wire every current and future tool into a session's McpServer.
   attach(server) {
     const handles = new Map();
-    for (const [name, def] of this.tools) handles.set(name, this.#register(server, name, def));
+    for (const [name, def] of this.tools) {
+      if (!this.#isHidden(name)) handles.set(name, this.#register(server, name, def));
+    }
     this.servers.set(server, handles);
   }
 

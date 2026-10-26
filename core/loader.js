@@ -11,6 +11,7 @@ import { basename, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { z } from 'zod';
 import { DiskQueue } from './queue.js';
+import { BROWSER_TOOLS } from './tools.js';
 import { Settings, SETTINGS_FILE, SETTINGS_FILE_RX, settingsFileName } from './settings.js';
 
 export function parseIni(text) {
@@ -52,7 +53,7 @@ export class Loader {
     const config = existsSync(join(dir, 'config.ini'))
       ? parseIni(readFileSync(join(dir, 'config.ini'), 'utf8')) : {};
 
-    const state = { toolNames: [], abort: new AbortController(), folder: basename(dir) };
+    const state = { toolNames: [], hiddenNames: [], abort: new AbortController(), folder: basename(dir) };
     this.contexts.setLimits?.(profile, {
       ...(manifest.max_tabs !== undefined && { maxTabs: manifest.max_tabs }),
       ...(manifest.sticky_tab !== undefined && { stickyTab: manifest.sticky_tab }),
@@ -128,11 +129,29 @@ export class Loader {
           this.registry.add(full, def, handler);
           state.toolNames.push(full);
         },
+        // hide core (or any) tools from MCP while this plugin is loaded - a wrapper
+        // plugin exposing safe high-level tools can pull the raw browser tools from
+        // the agent surface. true = the browser tool set; or an explicit name list.
+        // Refcounted in the registry; auto-unhidden at unload. REST keeps working.
+        hide: (names) => {
+          for (const t of names === true ? BROWSER_TOOLS : names) {
+            this.registry.hide(t);
+            state.hiddenNames.push(t);
+          }
+        },
+        unhide: (names) => {
+          for (const t of names === true ? BROWSER_TOOLS : names) {
+            this.registry.unhide(t);
+            const i = state.hiddenNames.indexOf(t);
+            if (i >= 0) state.hiddenNames.splice(i, 1);
+          }
+        },
       },
       log: (msg) => this.log(`[${name}] ${msg}`),
     };
 
     if (manifest.domains?.length) this.egress?.allow(profile, manifest.domains);
+    if (manifest.hide_core) api.tools.hide(manifest.hide_core === true ? true : manifest.hide_core);
 
     const bust = `?v=${Date.now()}`; // ESM caches by URL; a changed query forces a re-import
     const toolsMod = await import(pathToFileURL(join(dir, 'tools.js')).href + bust);
@@ -159,6 +178,7 @@ export class Loader {
     if (!state) return;
     state.abort.abort();
     for (const t of state.toolNames) this.registry.remove(t);
+    for (const t of state.hiddenNames) this.registry.unhide(t);
     this.help?.removePrefix(`${name}/`);
     this.api?.removePlugin(name);
     this.plugins.delete(name);

@@ -22,7 +22,10 @@ repos, they are runtime state), `notifications.list/dismiss/on`,
 HTML string; `/ui` lists all pages and `/` redirects there once any page exists),
 `human.ms()/delay()/rate()` (wave-paced delays for visible actions, per profile),
 `egress.allow(hosts)/list()` (the profile's egress allowlist; a manifest `domains: [...]` array
-is allowed automatically at load), `manifest`, `log`.
+is allowed automatically at load), `tools.hide(true | [names])` / `tools.unhide(...)` (pull core
+tools off the MCP surface while this plugin is loaded — `true` = the raw browser set; manifest
+`hide_core: true | [names]` does it at load; refcounted, restored at unload, REST unaffected),
+`manifest`, `log`.
 Plugins import nothing from node_modules; node builtins (`node:fs`, `node:sqlite`, ...) and
 global `fetch` are fine.
 

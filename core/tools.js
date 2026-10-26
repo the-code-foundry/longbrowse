@@ -8,6 +8,11 @@ import { filterSnapshot, computeBox } from './snapfilter.js';
 const text = (s) => ({ content: [{ type: 'text', text: s }] });
 const profileArg = z.string().optional().describe('browser profile (plugin name); default "default"');
 
+// the raw browser-driving tools a wrapper plugin may hide (manifest hide_core: true
+// or api.tools.hide(true)); the observability tools (events_tail, help, ...) stay
+export const BROWSER_TOOLS = ['navigate', 'snapshot', 'click', 'type', 'press', 'screenshot',
+  'screenshot_box', 'screenshot_element', 'upload', 'download', 'tabs', 'cookies', 'proxy'];
+
 export function registerGenericTools(registry, contexts, events, { dataDir }, help, notifications, proxies, egress = null) {
   registry.add('cookies', {
     description: 'Manage a profile\'s cookies. list (optionally by domain substring or url), set (array of {name, value, domain, path?, expires?, httpOnly?, secure?, sameSite?} — or url instead of domain; overwrites = update), delete (by domain and/or name; both omitted clears all).',

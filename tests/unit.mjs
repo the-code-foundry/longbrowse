@@ -70,6 +70,29 @@ import { Egress, hostAllowed } from '../core/egress.js';
   assert.deepEqual(calls, ['add:cg_t1', 'rm:cg_t1']);
 }
 
+// ToolRegistry hide/unhide: MCP handles drop and return, refcounted, pre-hide
+// applies at add, registry.call (REST) unaffected
+{
+  const reg = new ToolRegistry();
+  const calls = [];
+  const fakeServer = () => ({ registerTool: (name) => { calls.push(`add:${name}`); return { remove: () => calls.push(`rm:${name}`) }; } });
+  reg.attach(fakeServer());
+  reg.add('t1', { description: 'd' }, async () => ({ content: [{ type: 'text', text: 'ok' }] }));
+  reg.hide('t1'); // live hide -> handle removed
+  assert.deepEqual(calls, ['add:t1', 'rm:t1']);
+  reg.attach(fakeServer()); // new session must not see it
+  assert.deepEqual(calls, ['add:t1', 'rm:t1']);
+  assert.equal((await reg.call('t1')).content[0].text, 'ok'); // REST path still works
+  reg.hide('t1'); // second hider
+  reg.unhide('t1'); // one left -> still hidden
+  assert.deepEqual(calls, ['add:t1', 'rm:t1']);
+  reg.unhide('t1'); // last hider gone -> re-registered on both sessions
+  assert.deepEqual(calls, ['add:t1', 'rm:t1', 'add:t1', 'add:t1']);
+  reg.hide('t2'); // pre-hide: applies when the tool arrives
+  reg.add('t2', { description: 'd' }, async () => {});
+  assert.ok(!calls.includes('add:t2'));
+}
+
 // DiskQueue: push/take in order, empty -> null
 {
   const dir = mkdtempSync(join(tmpdir(), 'lb-q-'));
