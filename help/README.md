@@ -61,6 +61,11 @@ The snapshot sees the whole DOM, including content scrolled out of view.
 - Human pacing: plugins can space visible actions with `api.human.ms()/delay()` — a per-profile
   wave-drifting rate (HUMAN_BASE_APM, default 8 actions/min) with jitter and backpressure above
   HUMAN_CAP_APM (default 20/min).
+- Session lock (`session_lock` / `session_unlock` / `session_status`): one driver at a time.
+  `session_lock {owner, ttl?}` returns a token; while locked every other caller's tool calls
+  fail (help/events_tail stay open), the holder passes `_lock: <token>` in each call (stripped
+  before the handler). Re-lock as the same owner extends; `session_unlock {token}` releases
+  (`force: true` breaks); ttl default 900 s auto-expires.
 - Stealth: Chromium is driven through rebrowser-playwright (CDP Runtime.enable leak patched) and
   launches with `--disable-blink-features=AutomationControlled` (navigator.webdriver false).
   TIMEZONE / LOCALE envs align the browser clock and language with the egress IP.

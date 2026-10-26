@@ -1,6 +1,7 @@
 // The generic browser tools, registered once at boot. Every tool takes an optional
 // `profile` so an agent can drive any plugin's context (or the shared "default").
 import { z } from 'zod';
+import { randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { filterSnapshot, computeBox } from './snapfilter.js';
@@ -14,6 +15,57 @@ export const BROWSER_TOOLS = ['navigate', 'snapshot', 'click', 'type', 'press', 
   'screenshot_box', 'screenshot_element', 'upload', 'download', 'tabs', 'cookies', 'proxy'];
 
 export function registerGenericTools(registry, contexts, events, { dataDir }, help, notifications, proxies, egress = null) {
+  // session lock: one driver at a time. The holder of session_lock gets a token and
+  // passes it as `_lock` in every call (an interceptor strips it); anyone else's
+  // calls fail until session_unlock or ttl expiry. Advisory but enforced here, so
+  // two agents cannot interleave clicks on the same browser.
+  const lock = { owner: null, token: null, expires: 0 };
+  const LOCK_EXEMPT = new Set(['session_lock', 'session_unlock', 'session_status', 'help', 'events_tail']);
+  registry.intercept(({ raw, args }) => {
+    if (LOCK_EXEMPT.has(raw)) return;
+    if (!lock.token || Date.now() > lock.expires) return;
+    if (args?._lock === lock.token) {
+      const { _lock, ...rest } = args;
+      return { args: rest };
+    }
+    return { error: `session locked by "${lock.owner}" until ${new Date(lock.expires).toISOString()} - pass _lock from session_lock, or wait` };
+  }, 0);
+
+  registry.add('session_lock', {
+    description: 'Take the exclusive driving lock. Returns a token; pass it as `_lock` in every tool call while locked. Re-locking as the same owner extends the ttl. ttl seconds, default 900.',
+    inputSchema: { owner: z.string().describe('who is locking (shown to whoever is refused)'), ttl: z.number().int().positive().optional() },
+  }, async ({ owner, ttl = 900 }) => {
+    const now = Date.now();
+    if (lock.token && now < lock.expires && lock.owner !== owner) {
+      throw new Error(`locked by "${lock.owner}" until ${new Date(lock.expires).toISOString()}`);
+    }
+    if (lock.owner !== owner || now > lock.expires) lock.token = randomUUID();
+    lock.owner = owner;
+    lock.expires = now + ttl * 1000;
+    events.append('session', { type: 'lock', owner, expires: new Date(lock.expires).toISOString() });
+    return text(JSON.stringify({ token: lock.token, owner, expires: new Date(lock.expires).toISOString() }));
+  });
+
+  registry.add('session_unlock', {
+    description: 'Release the driving lock. Needs the token from session_lock (or force: true to break a lock).',
+    inputSchema: { token: z.string().optional(), force: z.boolean().optional() },
+  }, async ({ token, force }) => {
+    if (!lock.token || Date.now() > lock.expires) { lock.token = null; return text('already unlocked'); }
+    if (!force && token !== lock.token) throw new Error('wrong token (use force: true to break the lock)');
+    const was = lock.owner;
+    lock.token = null; lock.owner = null; lock.expires = 0;
+    events.append('session', { type: 'unlock', owner: was, forced: !!force });
+    return text(`unlocked (was "${was}")`);
+  });
+
+  registry.add('session_status', {
+    description: 'Driving-lock state: locked/free, owner, seconds left.',
+    inputSchema: {},
+  }, async () => {
+    const left = Math.max(0, Math.round((lock.expires - Date.now()) / 1000));
+    return text(JSON.stringify(lock.token && left ? { locked: true, owner: lock.owner, expires_in_s: left } : { locked: false }));
+  });
+
   registry.add('cookies', {
     description: 'Manage a profile\'s cookies. list (optionally by domain substring or url), set (array of {name, value, domain, path?, expires?, httpOnly?, secure?, sameSite?} — or url instead of domain; overwrites = update), delete (by domain and/or name; both omitted clears all).',
     inputSchema: {

@@ -93,6 +93,26 @@ import { Egress, hostAllowed } from '../core/egress.js';
   assert.ok(!calls.includes('add:t2'));
 }
 
+// Session lock: gated while locked, _lock passes and is stripped, unlock frees
+{
+  const { registerGenericTools } = await import('../core/tools.js');
+  const reg = new ToolRegistry();
+  const noop = () => {};
+  registerGenericTools(reg, { page: noop }, { append: noop, tail: () => [] }, { dataDir: mkdtempSync(join(tmpdir(), 'lb-sl-')) },
+    { add: noop, page: () => null, list: () => [] }, { list: () => [], dismiss: () => 0 }, { get: () => null, set: noop, clear: noop, all: () => ({}) });
+  reg.add('poke', { description: 'd' }, async (a) => ({ content: [{ type: 'text', text: `poked:${JSON.stringify(a)}` }] }));
+  const tokenMsg = JSON.parse((await reg.call('session_lock', { owner: 'A' })).content[0].text);
+  const refused = await reg.call('poke', { x: 1 });
+  assert.equal(refused.isError, true);
+  assert.match(refused.content[0].text, /locked by "A"/);
+  const okCall = await reg.call('poke', { x: 1, _lock: tokenMsg.token });
+  assert.equal(okCall.content[0].text, 'poked:{"x":1}'); // _lock stripped
+  const second = await reg.call('session_lock', { owner: 'B' });
+  assert.equal(second.isError, true);
+  await reg.call('session_unlock', { token: tokenMsg.token });
+  assert.equal((await reg.call('poke', {})).isError, undefined);
+}
+
 // ToolRegistry interceptors: priority order, arg rewrite, short-circuit success and
 // error, throwing interceptor skipped, unsubscribe works, raw name under prefix
 {
