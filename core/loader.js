@@ -126,7 +126,10 @@ export class Loader {
       },
       tools: {
         add: (short, def, handler) => {
-          const full = `${name}_${short}`;
+          // manifest tool_prefix overrides the <plugin>_ namespace; "" = flat names
+          // (one deployment per integration rarely needs per-plugin prefixes; the
+          // registry still throws on a duplicate)
+          const full = `${manifest.tool_prefix ?? `${name}_`}${short}`;
           this.registry.add(full, def, handler);
           state.toolNames.push(full);
         },

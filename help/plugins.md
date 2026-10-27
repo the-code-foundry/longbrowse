@@ -2,9 +2,11 @@
 
 A plugin is a folder mounted at /plugins/<name>/ — hot-reloaded on any file change:
 
-- `manifest.json` — `{"name", "profile"?, "start_url"?, "autostart"?, "max_tabs"?, "sticky_tab"?}`
+- `manifest.json` — `{"name", "profile"?, "start_url"?, "autostart"?, "max_tabs"?, "sticky_tab"?,
+  "tool_prefix"?}`
 - `tools.js` — `export async function register(api)`; `api.tools.add(short, {description,
-  inputSchema}, handler)` registers MCP tool `<name>_<short>`
+  inputSchema}, handler)` registers MCP tool `<name>_<short>` (manifest `tool_prefix` overrides
+  the `<name>_` part; `""` = flat tool names — the registry refuses duplicates)
 - `watch.js` (optional) — `export async function watch(api)`; background observer, stop on
   `api.signal`
 - `selectors.json` (optional) — every DOM selector in one file → `api.selectors`
