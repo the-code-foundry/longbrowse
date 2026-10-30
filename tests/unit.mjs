@@ -185,6 +185,32 @@ import { Egress, hostAllowed } from '../core/egress.js';
   rmSync(dataDir, { recursive: true, force: true });
 }
 
+// Loader: a register() that throws leaves nothing behind (tools cleaned up, reload works)
+{
+  const reg = new ToolRegistry();
+  const ev = { append: () => {}, tail: () => [] };
+  const fakeContexts = { page: async () => {}, context: async () => {} };
+  const dataDir = mkdtempSync(join(tmpdir(), 'lb-ld-'));
+  const dir = mkdtempSync(join(tmpdir(), 'lb-plug-'));
+  mkdirSync(join(dir, 'boom'));
+  writeFileSync(join(dir, 'boom', 'manifest.json'), '{"name": "boom"}');
+  writeFileSync(join(dir, 'boom', 'tools.js'),
+    'export function register({tools}) { tools.add("one", {description: "x", inputSchema: {}}, async () => {}); throw new Error("boom"); }');
+  const loader = new Loader({ pluginsDir: dir, registry: reg, contexts: fakeContexts, events: ev, dataDir, log: () => {} });
+  await loader.loadAll(); // swallows the failure, logs it
+  assert.ok(!reg.tools.has('boom_one'), 'partial registration cleaned up');
+  // fixed plugin loads cleanly afterwards (no "already registered")
+  writeFileSync(join(dir, 'boom', 'tools.js'),
+    'export function register({tools}) { tools.add("one", {description: "x", inputSchema: {}}, async () => {}); }');
+  await loader.load(join(dir, 'boom'));
+  assert.ok(reg.tools.has('boom_one'));
+  // concurrent loads of the same folder serialize instead of double-registering
+  await Promise.all([loader.load(join(dir, 'boom')), loader.load(join(dir, 'boom'))]);
+  assert.ok(reg.tools.has('boom_one'));
+  rmSync(dataDir, { recursive: true, force: true });
+  rmSync(dir, { recursive: true, force: true });
+}
+
 // snapshot filters
 {
   const yaml = [

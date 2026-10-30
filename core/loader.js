@@ -42,7 +42,16 @@ export class Loader {
     }
   }
 
+  // Loads are serialized: inotify and the mtime poll can fire for the same folder
+  // within milliseconds, and two interleaved load() calls double-register tools —
+  // the second one then fails and leaves the registry poisoned.
   async load(dir) {
+    const run = (this.chain ?? Promise.resolve()).then(() => this.#load(dir));
+    this.chain = run.catch(() => {}); // the queue survives a failed load
+    return run;
+  }
+
+  async #load(dir) {
     const manifest = JSON.parse(readFileSync(join(dir, 'manifest.json'), 'utf8'));
     const name = manifest.name;
     if (!/^[a-z0-9_-]+$/.test(name)) throw new Error(`bad plugin name in manifest: ${name}`);
@@ -166,11 +175,21 @@ export class Loader {
     if (manifest.hide_core) api.tools.hide(manifest.hide_core === true ? true : manifest.hide_core);
 
     const bust = `?v=${Date.now()}`; // ESM caches by URL; a changed query forces a re-import
-    const toolsMod = await import(pathToFileURL(join(dir, 'tools.js')).href + bust);
-    await toolsMod.register(api);
-    if (existsSync(join(dir, 'watch.js'))) {
-      const watchMod = await import(pathToFileURL(join(dir, 'watch.js')).href + bust);
-      watchMod.watch(api).catch((e) => this.log(`plugin ${name}: watcher died: ${e.message}`));
+    try {
+      const toolsMod = await import(pathToFileURL(join(dir, 'tools.js')).href + bust);
+      await toolsMod.register(api);
+      if (existsSync(join(dir, 'watch.js'))) {
+        const watchMod = await import(pathToFileURL(join(dir, 'watch.js')).href + bust);
+        watchMod.watch(api).catch((e) => this.log(`plugin ${name}: watcher died: ${e.message}`));
+      }
+    } catch (e) {
+      // a register() that throws must not leave partial state behind
+      state.abort.abort();
+      for (const t of state.toolNames) { try { this.registry.remove(t); } catch { /* never registered */ } }
+      for (const t of state.hiddenNames) { try { this.registry.unhide(t); } catch { /* not hidden */ } }
+      this.help?.removePrefix(`${name}/`);
+      this.api?.removePlugin(name);
+      throw e;
     }
     state.manifest = manifest;
     state.api = api;
@@ -189,8 +208,8 @@ export class Loader {
     const state = this.plugins.get(name);
     if (!state) return;
     state.abort.abort();
-    for (const t of state.toolNames) this.registry.remove(t);
-    for (const t of state.hiddenNames) this.registry.unhide(t);
+    for (const t of state.toolNames) { try { this.registry.remove(t); } catch { /* already gone */ } }
+    for (const t of state.hiddenNames) { try { this.registry.unhide(t); } catch { /* not hidden */ } }
     this.help?.removePrefix(`${name}/`);
     this.api?.removePlugin(name);
     this.plugins.delete(name);
