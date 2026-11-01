@@ -42,6 +42,12 @@ export class ApiServer {
   }
 
   async #handle(req, res) {
+    // health probes (horizon sidecar, pool managers) run without credentials
+    if (req.url === '/health') {
+      res.writeHead(200, { 'content-type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
     if (this.token) {
       const got = (req.headers.authorization ?? '').replace(/^Bearer\s+/i, '');
       if (got !== this.token) {
