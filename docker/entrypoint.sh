@@ -1,6 +1,8 @@
 #!/bin/sh
-# HEADLESS=1: no display at all. Otherwise Chromium runs headful on an Xvnc display,
-# viewable in a browser via noVNC (websockify) on port 6080 (publish loopback-only).
+# HEADLESS=1: no display at all. Otherwise node spawns Xvnc + websockify itself
+# (core/display.js), so pause/unpause can stop and restart them. This script only
+# prepares what node cannot: the X lock cleanup and the VNC password file (DES
+# needs --openssl-legacy-provider, which the server process does not run with).
 set -e
 if [ "$HEADLESS" = "1" ]; then
   exec node core/server.js
@@ -17,12 +19,5 @@ if [ -n "$VNC_PASSWORD" ]; then
     const ci = c.createCipheriv("des-ecb", Buffer.from("e84ad660c4721ae0", "hex"), null);
     ci.setAutoPadding(false);
     require("node:fs").writeFileSync("/tmp/vncpass", ci.update(pw), { mode: 0o600 });'
-  SEC="-SecurityTypes VncAuth -PasswordFile /tmp/vncpass"
-else
-  SEC="-SecurityTypes None"
 fi
-# shellcheck disable=SC2086 # SEC is two words on purpose
-Xvnc :99 -geometry "${SCREEN:-1280x720}" -depth 24 $SEC -localhost &
-websockify --web /usr/share/novnc 6080 localhost:5999 &
-export DISPLAY=:99
 exec node core/server.js

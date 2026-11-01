@@ -18,6 +18,7 @@ import { PluginFs } from './pluginfs.js';
 import { NotificationStore } from './notifications.js';
 import { ProxyStore } from './proxies.js';
 import { Egress } from './egress.js';
+import { Display } from './display.js';
 import { Human } from './human.js';
 import { z } from 'zod';
 import { join } from 'node:path';
@@ -29,7 +30,10 @@ const proxies = new ProxyStore(join(cfg.dataDir, 'proxies.json'));
 const events = new EventStore(join(cfg.dataDir, 'events'), { keep: cfg.eventsKeep });
 const egress = new Egress({ mode: cfg.egressMode, file: join(cfg.dataDir, 'egress.json'), events });
 const human = new Human({ baseApm: cfg.humanBaseApm, capApm: cfg.humanCapApm });
-const contexts = new Contexts({ ...cfg, notifications, proxies, egress }); // cfg carries maxTabs/stickyTab defaults
+// node owns Xvnc/websockify (not the entrypoint) so pause can stop and restart them
+const display = cfg.headless ? null : new Display({ screen: cfg.screen, vncPassword: cfg.vncPassword });
+if (display) await display.start();
+const contexts = new Contexts({ ...cfg, notifications, proxies, egress, ensureDisplay: display && (() => display.start()) }); // cfg carries maxTabs/stickyTab defaults
 const help = new HelpStore(new URL('../help', import.meta.url).pathname);
 registerGenericTools(registry, contexts, events, cfg, help, notifications, proxies, egress);
 const pluginFs = new PluginFs(cfg.pluginsDir);
@@ -41,6 +45,7 @@ const api = cfg.apiEnabled ? new ApiServer({
   defaultRedirect: cfg.defaultRedirect,
   status: () => ({
     uptime_s: Math.round((Date.now() - started) / 1000),
+    ...(cfg.allowPausing && { paused: contexts.paused }),
     tools: [...registry.tools.keys()],
     plugins: [...loader.plugins.entries()].map(([n, s]) => ({ name: n, tools: s.toolNames })),
     profiles: [...contexts.contexts.entries()].map(([n, c]) => ({ name: n, tabs: c.pages().map((p) => p.url()) })),
@@ -54,6 +59,32 @@ registry.add('plugins_rescan', {
   description: 'Force a plugin-folder rescan now: loads new folders, reloads changed ones (by mtime), unloads removed ones. The on-demand path when PLUGIN_WATCH=0/PLUGIN_POLL=0.',
   inputSchema: {},
 }, async () => ({ content: [{ type: 'text', text: JSON.stringify(loader.rescan()) }] }));
+
+// ALLOW_PAUSING=true: pause stops every browser profile and the VNC display
+// (frees the Chromium RAM); unpause brings the display back, browsers relaunch
+// lazily on the next use. Plugin watchers get 'paused' errors while paused.
+if (cfg.allowPausing) {
+  const text = (s) => ({ content: [{ type: 'text', text: s }] });
+  registry.add('pause', {
+    description: 'Stop all browser profiles and the VNC display to free RAM. Page tools fail with "paused" until unpause.',
+    inputSchema: {},
+  }, async () => {
+    contexts.paused = true;
+    await contexts.closeAll();
+    display?.stop();
+    events.append('core', { type: 'paused' });
+    return text('paused');
+  });
+  registry.add('unpause', {
+    description: 'Resume after pause: VNC display comes back, browser profiles relaunch on their next use.',
+    inputSchema: {},
+  }, async () => {
+    contexts.paused = false;
+    if (display) await display.start();
+    events.append('core', { type: 'unpaused' });
+    return text('resumed');
+  });
+}
 
 // Plugin editing over MCP, gated: writing a plugin is code execution in here.
 if (cfg.mcpPluginEditing) {

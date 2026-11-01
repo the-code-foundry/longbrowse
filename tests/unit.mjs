@@ -481,4 +481,15 @@ import { Egress, hostAllowed } from '../core/egress.js';
   rmSync(dir, { recursive: true, force: true });
 }
 
+// Pause gate: a paused Contexts refuses to launch; unpausing lifts the gate
+{
+  const { Contexts } = await import('../core/contexts.js');
+  const dir = mkdtempSync(join(tmpdir(), 'lb-pause-'));
+  const cx = new Contexts({ profilesDir: dir, headless: true });
+  cx.paused = true;
+  await assert.rejects(() => cx.context('default'), /paused/);
+  cx.paused = false; // no launch assertion: that would need a real browser
+  rmSync(dir, { recursive: true, force: true });
+}
+
 console.log('unit: ok');

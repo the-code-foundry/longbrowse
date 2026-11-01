@@ -6,12 +6,14 @@ import { join } from 'node:path';
 import { NOTIFICATION_SHIM } from './notifications.js';
 
 export class Contexts {
-  constructor({ profilesDir, headless, maxTabs = 3, stickyTab = true, notifications = null, proxies = null, egress = null }) {
+  constructor({ profilesDir, headless, maxTabs = 3, stickyTab = true, notifications = null, proxies = null, egress = null, ensureDisplay = null }) {
     this.profilesDir = profilesDir;
     this.headless = headless;
     this.notifications = notifications;
     this.proxies = proxies;
     this.egress = egress;
+    this.ensureDisplay = ensureDisplay; // headful only: bring Xvnc back before a launch
+    this.paused = false; // pause tool: no launches until unpause
     this.defaults = { maxTabs, stickyTab };
     this.limitsByProfile = new Map(); // profile -> {maxTabs, stickyTab, onOverflow}
     this.contexts = new Map(); // profile -> BrowserContext
@@ -29,6 +31,7 @@ export class Contexts {
 
   async context(profile = 'default') {
     if (!/^[a-z0-9_-]+$/i.test(profile)) throw new Error(`bad profile name: ${profile}`);
+    if (this.paused) throw new Error('paused: browser is stopped, call unpause first');
     const ctx = this.contexts.get(profile);
     if (ctx) return ctx;
     // concurrent callers (plugin watchers at startup) share one launch — a second
@@ -42,6 +45,7 @@ export class Contexts {
   }
 
   async #launch(profile) {
+    if (!this.headless) await this.ensureDisplay?.(); // Xvnc may be down after a pause
     const dir = join(this.profilesDir, profile);
     mkdirSync(dir, { recursive: true });
     // stale locks survive container restarts (volume keeps them, hostname changes);
