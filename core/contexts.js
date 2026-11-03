@@ -6,7 +6,8 @@ import { join } from 'node:path';
 import { NOTIFICATION_SHIM } from './notifications.js';
 
 export class Contexts {
-  constructor({ profilesDir, headless, maxTabs = 3, stickyTab = true, notifications = null, proxies = null, egress = null, ensureDisplay = null }) {
+  constructor({ profilesDir, headless, maxTabs = 3, stickyTab = true, notifications = null, proxies = null, egress = null, ensureDisplay = null, ephemeralProfiles = [] }) {
+    this.ephemeral = new Set(ephemeralProfiles);
     this.profilesDir = profilesDir;
     this.headless = headless;
     this.notifications = notifications;
@@ -69,16 +70,22 @@ export class Contexts {
     } else if (proxy && this.egress && this.egress.mode !== 'off') {
       console.error(`[contexts] ${profile}: user proxy set, egress ${this.egress.mode} skipped for this profile`);
     }
-    const ctx = await chromium.launchPersistentContext(dir, {
-      headless: this.headless,
+    const ctxOpts = {
       viewport: kiosk ? null : { width: w, height: h },
-      args,
-      ...(proxy && { proxy }),
       // fingerprint alignment: match the browser's clock and language to the egress
       // IP's region instead of the container's UTC/en-US defaults
       ...(process.env.TIMEZONE && { timezoneId: process.env.TIMEZONE }),
       ...(process.env.LOCALE && { locale: process.env.LOCALE }),
-    });
+    };
+    let ctx;
+    if (this.ephemeral.has(profile)) {
+      // in memory only: a plain browser + context, nothing written to the profile dir
+      const browser = await chromium.launch({ headless: this.headless, args, ...(proxy && { proxy }) });
+      ctx = await browser.newContext(ctxOpts);
+      ctx.on('close', () => browser.close().catch(() => {}));
+    } else {
+      ctx = await chromium.launchPersistentContext(dir, { headless: this.headless, args, ...(proxy && { proxy }), ...ctxOpts });
+    }
     // a crashed renderer never recovers by itself: reload it
     const wireCrash = (p) => p.on('crash', () => {
       console.error(`[contexts] page crashed (${profile}), reloading`);

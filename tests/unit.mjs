@@ -492,4 +492,27 @@ import { Egress, hostAllowed } from '../core/egress.js';
   rmSync(dir, { recursive: true, force: true });
 }
 
+
+// ApiServer: plugin routes/pages marked public skip API_TOKEN; others still need it
+{
+  const api = new ApiServer({ token: 'sekret', status: () => ({}), callTool: async () => ({}), pluginFs: null, pluginEditing: false, defaultRedirect: '/ui/lend' });
+  api.route('lend', 'POST', 'pair', () => ({ paired: true }), { public: true });
+  api.route('lend', 'POST', 'admin', () => ({ admin: true }));
+  api.page('lend', '', () => 'ui', { public: true });
+  const srv = api.listen(0, '127.0.0.1');
+  await new Promise((r) => srv.on('listening', r));
+  const base = `http://127.0.0.1:${srv.address().port}`;
+  const post = (p, h = {}) => fetch(base + p, { method: 'POST', headers: { 'content-type': 'application/json', ...h }, body: '{}' });
+  assert.equal((await post('/api/lend/pair')).status, 200);
+  assert.equal((await post('/api/lend/admin')).status, 401);
+  assert.equal((await post('/api/lend/admin', { authorization: 'Bearer sekret' })).status, 200);
+  assert.equal((await post('/api/tool/ld_cookies')).status, 401);
+  assert.equal((await fetch(base + '/ui/lend')).status, 200);
+  assert.equal((await fetch(base + '/', { redirect: 'manual' })).status, 302);
+  assert.equal((await fetch(base + '/status.json')).status, 401);
+  api.removePlugin('lend');
+  assert.equal((await post('/api/lend/pair')).status, 401); // unloaded: the exemption goes too
+  srv.close();
+}
+
 console.log('unit: ok');

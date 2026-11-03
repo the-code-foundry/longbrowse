@@ -13,23 +13,48 @@ export class ApiServer {
     this.pluginEditing = pluginEditing;
     this.routes = new Map(); // "METHOD <plugin>/<path>" -> handler({body, query, req, res})
     this.pages = new Map(); // "<plugin>/<path>" -> handler({query, req, res}) -> html string
+    // keys a plugin marked {public: true}: reachable without API_TOKEN; the plugin
+    // authenticates those requests itself (its own login, device tokens)
+    this.publicKeys = new Set();
   }
 
-  route(plugin, method, path, handler) {
+  route(plugin, method, path, handler, { public: pub = false } = {}) {
     const key = `${method.toUpperCase()} ${plugin}/${path.replace(/^\//, '')}`;
     this.routes.set(key, handler);
-    return () => this.routes.delete(key);
+    if (pub) this.publicKeys.add(`api ${key}`);
+    return () => { this.routes.delete(key); this.publicKeys.delete(`api ${key}`); };
   }
 
-  page(plugin, path, handler) {
+  page(plugin, path, handler, { public: pub = false } = {}) {
     const key = `${plugin}/${path.replace(/^\//, '')}`.replace(/\/$/, '');
     this.pages.set(key, handler);
-    return () => this.pages.delete(key);
+    if (pub) this.publicKeys.add(`ui ${key}`);
+    return () => { this.pages.delete(key); this.publicKeys.delete(`ui ${key}`); };
+  }
+
+  // a request that needs no API_TOKEN: a public plugin route/page, or "/" when it
+  // only redirects to a public page
+  #isPublic(req) {
+    const p = new URL(req.url, 'http://x').pathname;
+    const ui = p.match(/^\/ui\/(.+?)\/?$/);
+    if (ui) return this.publicKeys.has(`ui ${ui[1]}`);
+    const a = p.match(/^\/api\/(.+)$/);
+    if (a) return this.publicKeys.has(`api ${req.method} ${a[1]}`);
+    if (p === '/' && this.defaultRedirect) {
+      const t = this.defaultRedirect.match(/^\/ui\/(.+?)\/?$/);
+      return !!t && this.publicKeys.has(`ui ${t[1]}`);
+    }
+    return false;
   }
 
   removePlugin(plugin) {
     for (const k of this.routes.keys()) if (k.split(' ')[1].startsWith(`${plugin}/`)) this.routes.delete(k);
     for (const k of this.pages.keys()) if (k.startsWith(`${plugin}/`)) this.pages.delete(k);
+    for (const k of this.publicKeys) {
+      const [kind, ...rest] = k.split(' ');
+      const key = rest.join(' ');
+      if ((kind === 'ui' ? key : key.split(' ')[1]).startsWith(`${plugin}/`)) this.publicKeys.delete(k);
+    }
   }
 
   listen(port, host) {
@@ -48,7 +73,7 @@ export class ApiServer {
       res.end(JSON.stringify({ ok: true }));
       return;
     }
-    if (this.token) {
+    if (this.token && !this.#isPublic(req)) {
       const got = (req.headers.authorization ?? '').replace(/^Bearer\s+/i, '');
       if (got !== this.token) {
         res.writeHead(401, { 'content-type': 'application/json' });

@@ -21,6 +21,10 @@ export const cfg = {
   watchdog: process.env.WATCHDOG !== '0',
   pluginPoll: parseFloat(process.env.PLUGIN_POLL ?? '5'), // seconds between plugin-folder mtime rescans (hot-reload fallback); 0 = disabled
   pluginWatch: process.env.PLUGIN_WATCH !== '0', // 0 = no inotify watcher (rely on the poll and/or plugins_rescan)
+  // csv: profiles whose cookies no tool may read or change (sessions lent by a user)
+  sealedProfiles: (process.env.SEALED_PROFILES ?? '').split(',').map((x) => x.trim()).filter(Boolean),
+  // csv: profiles in a non-persistent context: cookies and storage never touch disk
+  ephemeralProfiles: (process.env.EPHEMERAL_PROFILES ?? '').split(',').map((x) => x.trim()).filter(Boolean),
   allowPausing: ['1', 'true'].includes(process.env.ALLOW_PAUSING ?? ''), // pause/unpause tools (stop browser+VNC, free RAM)
   screen: process.env.SCREEN ?? '1280x720',
   vncPassword: process.env.VNC_PASSWORD ?? '',

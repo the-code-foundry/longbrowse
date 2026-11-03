@@ -104,12 +104,12 @@ export class Loader {
       },
       http: {
         // POST /api/<plugin>/<path> on the API port; handler({body, query, req, res}) -> JSON
-        route: (method, path, handler) => this.api?.route(name, method, path, handler),
+        route: (method, path, handler, opts) => this.api?.route(name, method, path, handler, opts),
       },
       ui: {
         // GET /ui/<plugin>/<path> on the API port; handler({query, req, res}) -> html string.
         // When at least one page exists, / redirects to /ui (the page index).
-        page: (path, handler) => this.api?.page(name, path, handler),
+        page: (path, handler, opts) => this.api?.page(name, path, handler, opts),
       },
       human: { // pacing for this plugin's profile: suggested delays, wave-drifting rate
         ms: () => this.human?.ms(profile) ?? 0,
@@ -134,6 +134,8 @@ export class Loader {
         },
       },
       tools: {
+        // call any registered tool by its unprefixed name (core tools included) — server side, no auth
+        call: (short, args = {}) => this.registry.call(`${this.registry.prefix}${short}`, args),
         add: (short, def, handler) => {
           // manifest tool_prefix overrides the <plugin>_ namespace; "" = flat names
           // (one deployment per integration rarely needs per-plugin prefixes; the

@@ -14,7 +14,7 @@ const profileArg = z.string().optional().describe('browser profile (plugin name)
 export const BROWSER_TOOLS = ['navigate', 'snapshot', 'click', 'type', 'press', 'screenshot',
   'screenshot_box', 'screenshot_element', 'upload', 'download', 'tabs', 'cookies', 'proxy'];
 
-export function registerGenericTools(registry, contexts, events, { dataDir }, help, notifications, proxies, egress = null) {
+export function registerGenericTools(registry, contexts, events, { dataDir, sealedProfiles = [] }, help, notifications, proxies, egress = null) {
   // session lock: one driver at a time. The holder of session_lock gets a token and
   // passes it as `_lock` in every call (an interceptor strips it); anyone else's
   // calls fail until session_unlock or ttl expiry. Advisory but enforced here, so
@@ -82,6 +82,9 @@ export function registerGenericTools(registry, contexts, events, { dataDir }, he
       })).optional().describe('for set'),
     },
   }, async (a) => {
+    if (sealedProfiles.includes(a.profile ?? 'default')) {
+      throw new Error(`profile ${a.profile ?? 'default'} is sealed: its cookies cannot be read or changed through tools`);
+    }
     const ctx = await contexts.context(a.profile);
     if (a.action === 'set') {
       if (!a.cookies?.length) throw new Error('set needs cookies: [...]');
