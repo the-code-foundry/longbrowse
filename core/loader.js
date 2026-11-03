@@ -79,6 +79,11 @@ export class Loader {
       config,
       signal: state.abort.signal,
       page: () => this.contexts.page(profile),
+      // this plugin's profile browser: set context options for its next launch, close it
+      browser: {
+        setOptions: (opts) => this.contexts.setOptions(profile, opts),
+        close: () => this.contexts.close(profile),
+      },
       context: () => this.contexts.context(profile),
       open: async () => { // navigate the profile to the plugin's site
         const p = await this.contexts.page(profile);

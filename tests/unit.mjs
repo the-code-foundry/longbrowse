@@ -489,6 +489,9 @@ import { Egress, hostAllowed } from '../core/egress.js';
   cx.paused = true;
   await assert.rejects(() => cx.context('default'), /paused/);
   cx.paused = false; // no launch assertion: that would need a real browser
+  assert.equal(cx.setOptions('p', { locale: 'ro-RO', timezoneId: '' }), true);
+  assert.equal(cx.setOptions('p', { locale: 'ro-RO' }), false); // empty values dropped: same options
+  assert.deepEqual(cx.profileOptions.get('p'), { locale: 'ro-RO' });
   rmSync(dir, { recursive: true, force: true });
 }
 

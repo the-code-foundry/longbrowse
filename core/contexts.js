@@ -8,6 +8,7 @@ import { NOTIFICATION_SHIM } from './notifications.js';
 export class Contexts {
   constructor({ profilesDir, headless, maxTabs = 3, stickyTab = true, notifications = null, proxies = null, egress = null, ensureDisplay = null, ephemeralProfiles = [] }) {
     this.ephemeral = new Set(ephemeralProfiles);
+    this.profileOptions = new Map(); // profile -> extra context options (userAgent, locale, timezoneId, extraHTTPHeaders)
     this.profilesDir = profilesDir;
     this.headless = headless;
     this.notifications = notifications;
@@ -76,6 +77,7 @@ export class Contexts {
       // IP's region instead of the container's UTC/en-US defaults
       ...(process.env.TIMEZONE && { timezoneId: process.env.TIMEZONE }),
       ...(process.env.LOCALE && { locale: process.env.LOCALE }),
+      ...this.profileOptions.get(profile),
     };
     let ctx;
     if (this.ephemeral.has(profile)) {
@@ -123,6 +125,16 @@ export class Contexts {
     const ctx = await this.context(profile);
     const pages = ctx.pages();
     return pages.length ? pages[pages.length - 1] : await ctx.newPage();
+  }
+
+  // Per-profile context options, applied at the profile's next launch (identity copied
+  // from a user's browser: locale, timezone, Accept-Language, user agent). Returns
+  // whether they changed; the caller closes the profile to apply them now.
+  setOptions(profile, opts) {
+    const clean = Object.fromEntries(Object.entries(opts ?? {}).filter(([, v]) => v != null && v !== ''));
+    if (JSON.stringify(this.profileOptions.get(profile) ?? {}) === JSON.stringify(clean)) return false;
+    this.profileOptions.set(profile, clean);
+    return true;
   }
 
   // Close one profile's browser; the next use relaunches it (new proxy applies then).
