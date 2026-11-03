@@ -1,0 +1,20 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>LB frame — any word length</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@600;700&display=swap" rel="stylesheet">
+<style>
+  body{background:#06080f;margin:0;padding:40px;display:flex;flex-direction:column;gap:28px;align-items:flex-start}
+  /* left (cap + LB) | middle (stretches to the word) | right (cap). Height sets the scale. */
+  .lbframe{--h:120px;display:inline-flex;height:var(--h);align-items:stretch}
+  .lbframe .l{height:100%;width:auto}
+  .lbframe .r{height:100%;width:auto}
+  .lbframe .m{background:url(middle.png) 0 0 / 100% 100% no-repeat;display:flex;align-items:center;
+    padding:0 calc(var(--h) * .12);margin:0 -1px;
+    font:700 calc(var(--h) * .36)/1 Inter,system-ui,sans-serif;letter-spacing:-.01em;color:#fff;white-space:nowrap;
+    text-shadow:0 0 calc(var(--h) * .12) #7c3aed66}
+</style>
+<div class="lbframe"><img class="l" src="left.png"><span class="m">lend</span><img class="r" src="right.png"></div>
+<div class="lbframe"><img class="l" src="left.png"><span class="m">fetch</span><img class="r" src="right.png"></div>
+<div class="lbframe"><img class="l" src="left.png"><span class="m">longbrowse</span><img class="r" src="right.png"></div>
+<div class="lbframe" style="--h:80px"><img class="l" src="left.png"><span class="m">a browser that remembers</span><img class="r" src="right.png"></div>
+<div class="lbframe" style="--h:60px"><img class="l" src="left.png"><span class="m">x</span><img class="r" src="right.png"></div>

@@ -1,0 +1,17 @@
+@import url(https://fonts.googleapis.com/css2?family=Inter:wght@700&display=swap);
+/* LB ribbon frame around any text: <span class="lbframe"><i class="l"></i><b>lend</b><i class="r"></i></span>
+   --h sets the height; the middle band stretches to the text. Served by longbrowse at /brand/lbframe.css. */
+.lbframe{--h:56px;display:inline-flex;height:var(--h);align-items:stretch;vertical-align:middle}
+.lbframe .l,.lbframe .r{display:block;height:100%;background:0 0/auto 100% no-repeat}
+.lbframe .l{aspect-ratio:700/529;background-image:url(frame/web/left.png)}
+.lbframe .r{aspect-ratio:235/529;background-image:url(frame/web/right.png)}
+.lbframe b{display:flex;align-items:center;margin:0 -1px;padding:0 calc(var(--h)*.1);
+  background:url(frame/web/middle.png) 0 0/100% 100% no-repeat;
+  font:700 calc(var(--h)*.38)/1 Inter,system-ui,sans-serif;letter-spacing:-.01em;color:#fff;white-space:nowrap;
+  text-shadow:0 0 calc(var(--h)*.12) #7c3aed66}
+/* ribbon colours (sampled from the frame): cyan #12d7fd → blue #0037fd → violet #6d02fb → magenta #de36fd.
+   Text in the same gradient, brightened for dark backgrounds: <b><span class="grad">lend</span></b> */
+:root{--lb-cyan:#12d7fd;--lb-blue:#0037fd;--lb-violet:#6d02fb;--lb-magenta:#de36fd;
+  --lb-grad:linear-gradient(90deg,#3fe0ff,#4f7dff 40%,#9a5cff 72%,#ec5cff)}
+.lbframe .grad,.lb-grad-text{background:var(--lb-grad);-webkit-background-clip:text;background-clip:text;color:transparent;
+  text-shadow:none;filter:drop-shadow(0 0 10px #6d02fb55)}

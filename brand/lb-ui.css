@@ -1,0 +1,111 @@
+/* lb-ui — the "Ribbon Geometric" UI style for longbrowse pages.
+   Served by longbrowse at /brand/lb-ui.css. Pair with /brand/lbframe.css for the logo frame.
+   Components: tokens · base · .lb-btn · .lb-input · .lb-check · .lb-switch · .lb-card · .lb-h ·
+   .lb-rows/.lb-row · .lb-nav · .lb-badge · .lb-dot · .lb-progress · .lb-accent */
+@import url(https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap);
+
+:root{
+  /* palette */
+  --lb-cyan:#12d7fd; --lb-blue:#0037fd; --lb-violet:#6d02fb; --lb-magenta:#de36fd;
+  --lb-grad:linear-gradient(90deg,#14d4ff,#2f6bff 45%,#8b3dff 80%,#c34dff);
+  --lb-grad-soft:linear-gradient(90deg,#3fe0ff,#4f7dff 40%,#9a5cff 72%,#ec5cff);
+  --lb-bg:#070b14; --lb-surface:#0b1220; --lb-panel:#111a2b; --lb-panel-2:#152038; --lb-border:#1f2a44; --lb-border-2:#2a3858;
+  --lb-text:#e9eef8; --lb-muted:#93a0b8; --lb-faint:#5f6b84;
+  --lb-success:#22c55e; --lb-danger:#ef4444; --lb-warning:#f59e0b; --lb-info:#0ea5e9;
+  --lb-radius:12px; --lb-radius-sm:9px;
+  --lb-font:Inter,system-ui,sans-serif; --lb-mono:"JetBrains Mono",ui-monospace,monospace;
+  --lb-focus:0 0 0 2px var(--lb-bg),0 0 0 4px #4f7dffaa,0 0 18px #8b3dff55;
+}
+
+/* ---- base ---- */
+.lb{background:var(--lb-bg);color:var(--lb-text);font:15px/1.55 var(--lb-font);-webkit-font-smoothing:antialiased}
+.lb a{color:#5ad9ff;text-decoration:none} .lb a:hover{text-decoration:underline}
+.lb code{font:13px var(--lb-mono);color:#8fb4ff}
+.lb .mut{color:var(--lb-muted)} .lb .faint{color:var(--lb-faint)}
+
+/* corner accent: a small gradient wedge in the top-left corner (cards, primary/secondary buttons) */
+.lb-accent,.lb-card,.lb-btn.primary,.lb-btn.secondary,.lb-btn.danger,.lb-nav a.on,.lb-badge.new{position:relative;isolation:isolate}
+.lb-accent::before,.lb-card::before,.lb-btn.secondary::before,.lb-btn.danger::before,.lb-nav a.on::before,.lb-badge.new::before{
+  content:"";position:absolute;left:-1px;top:-1px;width:22px;height:22px;border-top-left-radius:inherit;
+  background:var(--lb-grad);clip-path:polygon(0 0,100% 0,0 100%);pointer-events:none;z-index:1}
+.lb-card::before{width:34px;height:34px}
+
+/* ---- buttons ---- */
+.lb-btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;height:40px;padding:0 18px;
+  font:600 14.5px var(--lb-font);color:var(--lb-text);background:var(--lb-panel);border:1px solid var(--lb-border-2);
+  border-radius:var(--lb-radius-sm);cursor:pointer;transition:background .15s,border-color .15s,box-shadow .15s,filter .15s;white-space:nowrap}
+.lb-btn:hover{background:var(--lb-panel-2);border-color:#38497a}
+.lb-btn:focus-visible{outline:none;box-shadow:var(--lb-focus)}
+.lb-btn:disabled{opacity:.45;cursor:not-allowed}
+.lb-btn.primary{border:0;color:#fff;background:var(--lb-grad);box-shadow:0 6px 22px -8px #6d02fb88}
+.lb-btn.primary:hover{filter:brightness(1.12)}
+.lb-btn.secondary{background:linear-gradient(var(--lb-panel),var(--lb-panel)) padding-box,var(--lb-grad) border-box;border:1px solid transparent}
+.lb-btn.secondary:hover{background:linear-gradient(var(--lb-panel-2),var(--lb-panel-2)) padding-box,var(--lb-grad) border-box}
+.lb-btn.ghost{background:transparent;border-color:var(--lb-border)}
+.lb-btn.ghost:hover{background:#ffffff08}
+.lb-btn.danger{background:#1a0f17;border-color:#7f1d1d;color:#fecaca}
+.lb-btn.danger::before{background:var(--lb-danger)}
+.lb-btn.danger:hover{background:#2a1119;border-color:var(--lb-danger)}
+.lb-btn.sm{height:32px;padding:0 12px;font-size:13px}
+
+/* ---- inputs ---- */
+.lb-input{height:42px;padding:0 14px;font:15px var(--lb-font);color:var(--lb-text);background:var(--lb-surface);
+  border:1px solid var(--lb-border);border-radius:var(--lb-radius-sm);transition:border-color .15s,box-shadow .15s;min-width:0}
+.lb-input::placeholder{color:var(--lb-faint)}
+.lb-input:focus{outline:none;border-color:transparent;
+  background:linear-gradient(var(--lb-surface),var(--lb-surface)) padding-box,var(--lb-grad) border-box;box-shadow:0 0 16px -4px #8b3dff66}
+.lb-input:disabled{background:#0d1524;color:var(--lb-faint);border-color:#18213a}
+
+.lb-check{appearance:none;width:22px;height:22px;border-radius:6px;border:1.5px solid var(--lb-border-2);background:var(--lb-surface);
+  cursor:pointer;display:inline-grid;place-content:center;vertical-align:middle;margin:0}
+.lb-check:checked{border:0;background:var(--lb-grad)}
+.lb-check:checked::after{content:"";width:10px;height:6px;border:2.5px solid #fff;border-top:0;border-right:0;transform:translateY(-1px) rotate(-45deg)}
+.lb-check:focus-visible{outline:none;box-shadow:var(--lb-focus)}
+
+.lb-switch{appearance:none;width:46px;height:26px;border-radius:999px;background:#1a2440;border:1px solid var(--lb-border-2);
+  position:relative;cursor:pointer;vertical-align:middle;margin:0;transition:background .2s}
+.lb-switch::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#7a86a3;transition:transform .2s,background .2s}
+.lb-switch:checked{background:var(--lb-grad);border-color:transparent}
+.lb-switch:checked::after{transform:translateX(20px);background:#fff}
+.lb-switch:focus-visible{outline:none;box-shadow:var(--lb-focus)}
+
+/* ---- cards, section headings, rows ---- */
+.lb-card{background:linear-gradient(180deg,var(--lb-panel),#0e1626);border:1px solid var(--lb-border);border-radius:var(--lb-radius);
+  padding:18px 22px;box-shadow:inset 0 1px 0 #ffffff07,0 20px 40px -28px #000}
+.lb-card.plain::before{display:none}
+.lb-card h3{margin:0 0 4px;font-size:18px;font-weight:650}
+
+.lb-h{display:flex;align-items:center;gap:12px;margin:30px 0 12px;font:700 13.5px var(--lb-font);letter-spacing:.16em;
+  text-transform:uppercase;color:#a78bfa}
+.lb-h::before{content:"";width:22px;height:14px;background:var(--lb-grad);clip-path:polygon(40% 0,100% 0,60% 100%,0 100%)}
+
+.lb-rows{background:var(--lb-panel);border:1px solid var(--lb-border);border-radius:var(--lb-radius);overflow:hidden}
+.lb-row{display:flex;align-items:center;gap:14px;padding:13px 18px;border-top:1px solid var(--lb-border)}
+.lb-row:first-child{border-top:0}
+.lb-row .grow{flex:1;min-width:0}
+.lb-row .meta{color:var(--lb-muted);font-size:13.5px}
+
+.lb-dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--lb-faint);flex:none}
+.lb-dot.on{background:var(--lb-success);box-shadow:0 0 10px #22c55e99}
+.lb-dot.warn{background:var(--lb-warning)} .lb-dot.bad{background:var(--lb-danger)}
+
+/* ---- navigation ---- */
+.lb-nav{display:inline-flex;gap:4px;padding:5px;background:var(--lb-surface);border:1px solid var(--lb-border);border-radius:var(--lb-radius)}
+.lb-nav a{display:inline-flex;align-items:center;gap:7px;white-space:nowrap;padding:7px 14px;border-radius:9px;color:var(--lb-muted);font-weight:500;font-size:14px}
+.lb-nav a:hover{color:var(--lb-text);background:#ffffff07;text-decoration:none}
+.lb-nav a.on{color:#fff;background:linear-gradient(var(--lb-panel-2),var(--lb-panel-2)) padding-box,var(--lb-grad) border-box;border:1px solid transparent}
+
+/* ---- badges ---- */
+.lb-badge{display:inline-flex;align-items:center;gap:7px;height:28px;padding:0 12px;border-radius:999px;font:600 13px var(--lb-font);
+  color:var(--lb-text);background:var(--lb-panel);border:1px solid var(--lb-border-2)}
+.lb-badge.new{border-radius:8px;background:linear-gradient(var(--lb-panel),var(--lb-panel)) padding-box,var(--lb-grad) border-box;border-color:transparent}
+.lb-badge.mono{font-family:var(--lb-mono);font-weight:500}
+.lb-badge.warn{border-color:#5b4313;color:#fcd34d} .lb-badge.bad{border-color:#7f1d1d;color:#fca5a5}
+
+/* ---- progress ---- */
+.lb-progress{height:10px;border-radius:999px;background:#18223a;overflow:hidden}
+.lb-progress > i{display:block;height:100%;border-radius:inherit;background:var(--lb-grad);box-shadow:0 0 12px #8b3dff66}
+
+/* ---- small helpers ---- */
+.lb-row-flex{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.lb-code-big{font:600 32px var(--lb-mono);letter-spacing:.22em;background:var(--lb-grad-soft);-webkit-background-clip:text;background-clip:text;color:transparent}

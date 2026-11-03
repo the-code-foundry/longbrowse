@@ -15,6 +15,7 @@ RUN npx playwright install --with-deps chromium \
 
 COPY core/ core/
 COPY help/ help/
+COPY brand/ brand/
 COPY docker/entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 

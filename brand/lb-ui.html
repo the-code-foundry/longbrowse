@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>lb-ui · Ribbon Geometric</title>
+<link rel="stylesheet" href="lbframe.css">
+<link rel="stylesheet" href="lb-ui.css">
+<style>
+  body{margin:0;padding:34px} .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;max-width:1300px}
+  .cell h2{margin:0 0 18px;font-size:20px;font-weight:650}
+  .sw{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;font-size:12.5px;color:var(--lb-muted);text-align:center}
+  .sw i{display:block;height:48px;border-radius:10px;border:1px solid var(--lb-border);margin-bottom:6px}
+</style>
+</head>
+<body class="lb">
+  <div class="lb-row-flex" style="margin-bottom:26px"><span class="lbframe" style="--h:64px"><i class="l"></i><b><span class="grad">ui</span></b><i class="r"></i></span>
+    <div><div style="font-size:22px;font-weight:700">Ribbon Geometric</div><div class="mut">longbrowse UI style · /brand/lb-ui.css</div></div></div>
+  <div class="grid">
+    <div class="lb-card plain cell"><h2>Palette</h2>
+      <div class="sw">
+        <div><i style="background:var(--lb-grad)"></i>brand</div><div><i style="background:var(--lb-surface)"></i>surface</div>
+        <div><i style="background:var(--lb-panel)"></i>panel</div><div><i style="background:var(--lb-border)"></i>border</div>
+        <div><i style="background:var(--lb-success)"></i>success</div><div><i style="background:var(--lb-danger)"></i>danger</div>
+        <div><i style="background:var(--lb-warning)"></i>warning</div><div><i style="background:var(--lb-info)"></i>info</div>
+      </div></div>
+    <div class="lb-card plain cell"><h2>Buttons</h2>
+      <div class="lb-row-flex"><button class="lb-btn primary">Primary</button><button class="lb-btn secondary">Secondary</button></div>
+      <div class="lb-row-flex" style="margin-top:12px"><button class="lb-btn ghost">Ghost</button><button class="lb-btn danger">Danger</button><button class="lb-btn" disabled>Disabled</button></div>
+      <div class="lb-row-flex" style="margin-top:12px"><button class="lb-btn primary sm">Small</button><button class="lb-btn secondary sm">Small</button></div></div>
+    <div class="lb-card plain cell"><h2>Inputs &amp; controls</h2>
+      <input class="lb-input" placeholder="Input" style="width:100%;box-sizing:border-box">
+      <input class="lb-input" value="Focused input" autofocus style="width:100%;box-sizing:border-box;margin-top:10px">
+      <input class="lb-input" value="Disabled" disabled style="width:100%;box-sizing:border-box;margin-top:10px">
+      <div class="lb-row-flex" style="margin-top:14px"><input type="checkbox" class="lb-check" checked> Checkbox
+        <input type="checkbox" class="lb-check"> Unchecked</div>
+      <div class="lb-row-flex" style="margin-top:12px"><input type="checkbox" class="lb-switch" checked> Switch on
+        <input type="checkbox" class="lb-switch"> Switch off</div></div>
+    <div class="cell"><div class="lb-card"><h3>Card title</h3><div class="mut">Short description or details.</div></div>
+      <div class="lb-rows" style="margin-top:14px">
+        <div class="lb-row"><span class="lb-dot on"></span><span class="grow">Online</span><span class="meta">2 min ago</span></div>
+        <div class="lb-row"><span class="lb-dot"></span><span class="grow">Offline</span><span class="meta">last seen 2 h ago</span></div>
+        <div class="lb-row"><span class="lb-dot warn"></span><span class="grow">Warning</span><span class="meta">check required</span></div>
+      </div></div>
+    <div class="lb-card plain cell"><h2>Navigation &amp; badges</h2>
+      <nav class="lb-nav"><a class="on" href="#">Home</a><a href="#">Browsers</a><a href="#">Lent sites</a><a href="#">Settings</a></nav>
+      <div class="lb-row-flex" style="margin-top:16px"><span class="lb-badge new">New</span><span class="lb-badge">Beta</span><span class="lb-badge mono">v0.4.0</span></div>
+      <div class="lb-row-flex" style="margin-top:10px"><span class="lb-badge"><span class="lb-dot on"></span>Online</span><span class="lb-badge"><span class="lb-dot"></span>Offline</span><span class="lb-badge warn"><span class="lb-dot warn"></span>Warning</span></div>
+      <div class="lb-progress" style="margin-top:18px"><i style="width:58%"></i></div></div>
+    <div class="lb-card plain cell"><h2>Headings &amp; code</h2>
+      <div class="lb-h" style="margin-top:0">Browsers</div><div class="lb-h">Lent sites</div>
+      <div class="lb-code-big">552 798</div><div style="margin-top:8px">Address <code>http://box:41945</code></div></div>
+  </div>
+</body>
+</html>

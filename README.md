@@ -1,3 +1,5 @@
+<p align="center"><img src="brand/longbrowse-banner.png" alt="longbrowse" width="420"></p>
+
 # longbrowse
 
 A persistent browser for AI agents: one container with Chromium (Playwright), an MCP server
@@ -21,9 +23,19 @@ own MCP tools next to the generic browser tools.
 - **One profile per plugin** — `launchPersistentContext` per profile dir; sessions survive
   restarts via a docker volume.
 - **Live view** — headful Chromium on Xvnc, watchable (and drivable) from a browser via noVNC.
-  Optional `VNC_PASSWORD`, kiosk mode, configurable screen size. `HEADLESS=1` to skip it.
+  Optional `VNC_PASSWORD`, kiosk mode, configurable screen size, browser window filling the
+  screen. A plugin can switch the web viewer on and off at run time. `HEADLESS=1` to skip it.
+- **Pause to save RAM** — with `ALLOW_PAUSING=1`, the `pause` tool closes every browser and the
+  display; `unpause` brings the display back and browsers relaunch on their next use.
+- **Locked-down profiles** — `SEALED_PROFILES` makes the `cookies` tool refuse a profile, and
+  `EPHEMERAL_PROFILES` keeps a profile in memory only: nothing it sees is written to disk. A plugin
+  can set the profile's locale, timezone, user agent and headers (`browser.setOptions`).
 - **REST API** — every MCP tool also at `POST /api/tool/<name>`, plus a status page and
   per-plugin HTTP routes and UI pages. Bearer auth via `API_TOKEN`; MCP auth via `MCP_TOKEN`.
+  Plugin routes and pages can be public when they check their own credentials (a PIN, a device
+  token); `/health` answers probes without a token.
+- **Branding kit** — the LB logo, the ribbon frame cut for any text length, and a small UI style
+  sheet, served read-only at `/brand/` so plugin pages can use them. See [brand/](brand/README.md).
 - **Event store and disk queues** — per-plugin append-only events (SQLite, pruned, cursorable
   with `events_tail`) and a crash-safe disk queue, so agents can poll or be webhooked instead of
   holding a connection.
@@ -62,7 +74,8 @@ plugins/hello/
 
 That registers the MCP tool `hello_shout`. The `api` object also gives you `z` (zod schemas),
 `events`, `queue`, `settings`, `notifications` (captured Web Notifications), `http.route`,
-`ui.page`, `human` (paced delays), `egress`, and `selectors.json` support so a site redesign is a
+`ui.page`, `human` (paced delays), `egress`, `tools.call`, `tools.hide`, `tools.intercept`,
+`browser.setOptions`, `viewer`, and `selectors.json` support so a site redesign is a
 one-file fix. Full contract: [help/plugins.md](help/plugins.md) and [docs/index.md](docs/index.md).
 
 Plugins are trusted, in-process code. Containment is the container boundary and the egress
@@ -75,7 +88,8 @@ All knobs are environment variables (see `docker-compose.yml` and `core/config.j
 `TOOL_PREFIX` (namespace all tool names, for several containers behind one MCP aggregator),
 `TIMEZONE`, `LOCALE`, `STEALTH_PROFILES` (fingerprint alignment; see help/README.md),
 `VNC_PASSWORD`, `EGRESS` (`off|log|enforce`), `WATCHDOG`, `EVENTS_KEEP`, `HUMAN_BASE_APM`,
-`HUMAN_CAP_APM`, `API_PLUGIN_EDITING_ALLOWED`, `MCP_PLUGIN_EDITING_ALLOWED`.
+`HUMAN_CAP_APM`, `API_PLUGIN_EDITING_ALLOWED`, `MCP_PLUGIN_EDITING_ALLOWED`, `ALLOW_PAUSING`,
+`SEALED_PROFILES`, `EPHEMERAL_PROFILES`, `DEFAULT_REDIRECT`, `PLUGIN_POLL`, `PLUGIN_WATCH`.
 
 ## Docs
 

@@ -19,9 +19,16 @@ plugin's `settings.x.json`; `settings.global("x"?)` → `settings.x.json` shared
 root, default name `global` — none of these writes trigger a reload; gitignore them in plugin
 repos, they are runtime state), `notifications.list/dismiss/on`,
 `onToolCall(fn)`, `help.add(relpath, text)` (publish a help page as `<plugin>/<relpath>`),
-`http.route(method, path, handler)` (REST endpoint `/api/<plugin>/<path>`),
-`ui.page(path, handler)` (HTML page at `/ui/<plugin>/<path>` on the API port; handler returns an
-HTML string; `/ui` lists all pages and `/` redirects there once any page exists),
+`http.route(method, path, handler, {public}?)` (REST endpoint `/api/<plugin>/<path>`),
+`ui.page(path, handler, {public}?)` (HTML page at `/ui/<plugin>/<path>` on the API port; handler
+returns an HTML string; `/ui` lists all pages and `/` redirects there once any page exists;
+`{public: true}` on either skips `API_TOKEN`, for routes that check their own credentials, such as a
+PIN or a device token), `tools.call(short, args?)` (call any tool by its unprefixed name and get
+the MCP result), `browser.setOptions(opts)` (context options for this plugin's profile — `locale`,
+`timezoneId`, `userAgent`, `extraHTTPHeaders`, ... — applied at the next launch; empty values are
+dropped; returns whether anything changed) and `browser.close()` (close the profile's browser, the
+next use relaunches it), `viewer` (headful only, else `null`: `viewer.set(on)` starts or stops the
+noVNC web viewer, `viewer.on` tells whether it runs; the browser keeps its display either way),
 `human.ms()/delay()/rate()` (wave-paced delays for visible actions, per profile),
 `egress.allow(hosts)/list()` (the profile's egress allowlist; a manifest `domains: [...]` array
 is allowed automatically at load), `tools.hide(true | [names])` / `tools.unhide(...)` (pull core

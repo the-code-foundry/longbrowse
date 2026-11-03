@@ -17,7 +17,9 @@ listener.
 | `core/events.js` | append-only JSONL per plugin under `DATA_DIR/events/` |
 | `core/queue.js` | disk queue, one JSON file per item under `DATA_DIR/queue/<plugin>/` |
 | `core/notifications.js` | Web Notification capture: permission granted + `window.Notification` shim in every context; in-memory store (cap 1000) behind the `notifications` tool; plugins get `api.notifications.list/dismiss/on` scoped to their profile |
-| `core/config.js` | env knobs: `PORT`, `HOST`, `PLUGINS_DIR`, `DATA_DIR`, `PROFILES_DIR`, `HEADLESS`, `KIOSK`, `SCREEN`, `MAX_TABS` (default 3), `STICKY_TAB` (default 1: tab 0 not closable) |
+| `core/config.js` | env knobs: `PORT`, `HOST`, `PLUGINS_DIR`, `DATA_DIR`, `PROFILES_DIR`, `HEADLESS`, `KIOSK`, `SCREEN`, `MAX_TABS` (default 3), `STICKY_TAB` (default 1: tab 0 not closable), `ALLOW_PAUSING` (pause/unpause tools), `SEALED_PROFILES` (csv: the `cookies` tool refuses them), `EPHEMERAL_PROFILES` (csv: in-memory browser context, nothing written under `PROFILES_DIR`), `DEFAULT_REDIRECT` (where `/` goes on the API port) |
+| `core/display.js` | Xvnc + websockify (noVNC), owned by the node process so pause can stop them and unpause bring them back; the web viewer can be switched on its own (`api.viewer`) |
+| `core/api.js` | REST API, status page, plugin routes and pages, `/health`, `/brand/*` (served from `brand/`) |
 
 Tabs: `tabs new` refuses past `MAX_TABS`; a tab the site opens beyond the limit is auto-closed
 and logged as a `popup_closed` event. Manifest `max_tabs`/`sticky_tab` override per plugin.
@@ -59,7 +61,8 @@ Headful by default on an Xvnc display, viewable in any browser through noVNC (th
 full control of every logged-in site — keep the port loopback-only, tunnel over SSH for remote
 viewing). `HEADLESS=1` skips the display entirely; `KIOSK=1` launches Chromium with `--kiosk`
 (fullscreen, no browser chrome — fits the one-site-per-profile model; with several plugins on the
-one display their windows stack). `SCREEN=WxH` sets the display size.
+one display their windows stack). `SCREEN=WxH` sets the display size; the browser window fills it
+(maximised, the page viewport follows the window).
 
 ## MCP transport
 

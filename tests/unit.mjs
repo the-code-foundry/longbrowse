@@ -513,6 +513,9 @@ import { Egress, hostAllowed } from '../core/egress.js';
   assert.equal((await fetch(base + '/ui/lend')).status, 200);
   assert.equal((await fetch(base + '/', { redirect: 'manual' })).status, 302);
   assert.equal((await fetch(base + '/status.json')).status, 401);
+  assert.equal((await fetch(base + '/brand/lbframe.css')).status, 200); // brand: public
+  assert.notEqual((await fetch(base + '/brand/../core/api.js')).status, 200); // normalized away or refused
+  assert.equal((await fetch(base + '/brand/nope.png')).status, 404);
   api.removePlugin('lend');
   assert.equal((await post('/api/lend/pair')).status, 401); // unloaded: the exemption goes too
   srv.close();

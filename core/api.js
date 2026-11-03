@@ -2,6 +2,10 @@
 // "/api/<plugin>/<route>" for plugin-defined endpoints. If a token is configured,
 // every request must carry "Authorization: Bearer <token>"; no token set = open.
 import { createServer } from 'node:http';
+import { existsSync, readFileSync } from 'node:fs';
+import { extname, join, normalize } from 'node:path';
+
+const BRAND_DIR = new URL('../brand', import.meta.url).pathname;
 
 export class ApiServer {
   constructor({ token, status, callTool, pluginFs, pluginEditing = false, defaultRedirect = '' }) {
@@ -47,6 +51,18 @@ export class ApiServer {
     return false;
   }
 
+  #brand(req, res) {
+    const rel = decodeURIComponent(new URL(req.url, 'http://x').pathname.slice('/brand/'.length));
+    const type = { '.png': 'image/png', '.css': 'text/css', '.svg': 'image/svg+xml', '.html': 'text/html' }[extname(rel)];
+    const file = normalize(join(BRAND_DIR, rel));
+    if (!type || rel.includes('..') || !file.startsWith(BRAND_DIR + '/') || !existsSync(file)) {
+      res.writeHead(404).end();
+      return;
+    }
+    res.writeHead(200, { 'content-type': type, 'cache-control': 'public, max-age=3600' });
+    res.end(readFileSync(file));
+  }
+
   removePlugin(plugin) {
     for (const k of this.routes.keys()) if (k.split(' ')[1].startsWith(`${plugin}/`)) this.routes.delete(k);
     for (const k of this.pages.keys()) if (k.startsWith(`${plugin}/`)) this.pages.delete(k);
@@ -67,7 +83,9 @@ export class ApiServer {
   }
 
   async #handle(req, res) {
-    // health probes (horizon sidecar, pool managers) run without credentials
+    // brand assets (logo, LB frame) are public and read-only, so plugin login pages can show them
+    if (req.method === 'GET' && req.url.startsWith('/brand/')) return this.#brand(req, res);
+    // health probes (load balancers, pool managers) run without credentials
     if (req.url === '/health') {
       res.writeHead(200, { 'content-type': 'application/json' });
       res.end(JSON.stringify({ ok: true }));

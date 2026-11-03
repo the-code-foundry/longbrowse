@@ -55,12 +55,13 @@ export class Contexts {
     for (const f of ['SingletonLock', 'SingletonCookie', 'SingletonSocket']) {
       rmSync(join(dir, f), { force: true });
     }
-    // kiosk: fullscreen, no browser chrome — right for a single always-on site.
-    // No window manager on the Xvnc display, so --kiosk alone does not size the
-    // window: position and size are passed explicitly, viewport follows the window.
+    // The window fills the screen (maximised). No window manager on the Xvnc display,
+    // so --start-maximized does nothing: position and size are passed explicitly and
+    // the viewport follows the window. kiosk: also no browser chrome, for one always-on site.
     const kiosk = process.env.KIOSK === '1';
     const [w, h] = (process.env.SCREEN ?? '1280x720').split('x').map(Number);
-    const args = kiosk ? ['--kiosk', '--window-position=0,0', `--window-size=${w},${h}`] : [];
+    const args = ['--window-position=0,0', `--window-size=${w},${h}`];
+    if (kiosk) args.unshift('--kiosk');
     args.push('--disable-blink-features=AutomationControlled'); // navigator.webdriver stays false
     // user-set proxy wins; otherwise egress (log/enforce) interposes its SOCKS5
     // listener, and hostnames resolve at the proxy so DNS cannot leak around it
@@ -72,7 +73,7 @@ export class Contexts {
       console.error(`[contexts] ${profile}: user proxy set, egress ${this.egress.mode} skipped for this profile`);
     }
     const ctxOpts = {
-      viewport: kiosk ? null : { width: w, height: h },
+      viewport: this.headless ? { width: w, height: h } : null,
       // fingerprint alignment: match the browser's clock and language to the egress
       // IP's region instead of the container's UTC/en-US defaults
       ...(process.env.TIMEZONE && { timezoneId: process.env.TIMEZONE }),

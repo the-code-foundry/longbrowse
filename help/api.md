@@ -9,6 +9,11 @@ is set, every request needs `Authorization: Bearer <token>`; unset = open.
   the MCP result (`{content: [...], isError?}`). Example:
   `curl -X POST :41933/api/tool/snapshot -d '{"profile":"mail","max_lines":20}'`
 - `POST /api/<plugin>/<route>` — endpoints a plugin registered with `api.http.route`.
+- Without the token: `GET /health` (`{"ok": true}`, for probes), `GET /brand/<file>` (logo, LB frame
+  and UI style sheets, read-only), and the plugin routes and pages registered with `{public: true}`
+  (they check their own credentials). `/` too, when `DEFAULT_REDIRECT` points at a public page.
+- `ALLOW_PAUSING=1` adds the tools `pause` (close every browser profile and the VNC display to free
+  RAM; page tools fail with "paused") and `unpause` (display back, browsers relaunch on next use).
 - Plugin editing, only when `API_PLUGIN_EDITING_ALLOWED=1`:
   - `GET /api/plugins` — all plugins and files
   - `GET /api/plugins/<p>/<file>` — `{content}`
