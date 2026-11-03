@@ -11,6 +11,10 @@ plugin folders you can edit while the server runs.
 Each plugin gets its own browser profile — logins never bleed between sites — and registers its
 own MCP tools next to the generic browser tools.
 
+Example: [longbrowse-lend](https://github.com/the-code-foundry/longbrowse-lend) is built on it: a
+Chrome extension lends your logged-in sites to a longbrowse box, and the AI browses them as you
+without ever seeing the cookies.
+
 ## Features
 
 - **MCP server, no wrapper** — streamable HTTP on `/mcp`, written directly against the MCP SDK.
