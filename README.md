@@ -1,6 +1,6 @@
-<p align="center"><img src="brand/longbrowse-banner.png" alt="longbrowse" width="420"></p>
+<p align="center"><img src="brand/lb-logo-glossy-256.png" alt="longbrowse logo" width="128"></p>
 
-# longbrowse
+# What is longbrowse?
 
 A persistent browser for AI agents: one container with Chromium (Playwright), an MCP server
 (streamable HTTP), a REST API, a live noVNC view, and hot-reloaded site plugins.
@@ -11,9 +11,34 @@ plugin folders you can edit while the server runs.
 Each plugin gets its own browser profile — logins never bleed between sites — and registers its
 own MCP tools next to the generic browser tools.
 
-Example: [longbrowse-lend](https://github.com/the-code-foundry/longbrowse-lend) is built on it: a
-Chrome extension lends your logged-in sites to a longbrowse box, and the AI browses them as you
-without ever seeing the cookies.
+## Built on longbrowse: longbrowse-lend
+
+[longbrowse-lend](https://github.com/the-code-foundry/longbrowse-lend) is a Chrome extension plus a
+longbrowse plugin. You put a tab in a tab group, and that site's login is lent to a longbrowse box.
+The AI then browses the site as you, without ever seeing the cookies, and you take the loan back
+whenever you like.
+
+## Example of possible usages
+
+Ideas for plugins, from what the core already offers (profiles, events, queues, live view, egress
+control). Not all of these exist yet.
+
+- **Chat integration** — a web chat app (WhatsApp Web, Messenger, Slack, Discord, a support inbox) as
+  MCP tools: read conversations, send replies, and get new messages as events or webhooks from the
+  captured browser notifications.
+- **Shopping** — keep a logged-in shop session: watch prices and stock, fill a cart, track orders.
+  The final "buy" can wait for a person, who confirms it in the live view.
+- **Uptime and journey monitoring** — run a real login, search or checkout on a schedule, and record
+  the time each step takes. When a step fails, save a screenshot and raise an event. It catches
+  what a plain HTTP ping misses: broken scripts, login walls, cookie banners.
+- **Automated scraping** — read pages that need a login or JavaScript, with an egress allowlist per
+  profile, a disk queue for jobs, and pause when idle to give the RAM back.
+- **Back-office work for apps without an API** — tickets, wikis, intranet forms, supplier portals:
+  turn the clicks people repeat every day into tools an agent can call.
+- **Hand-off to a person** — the agent stops at a CAPTCHA, a 2FA prompt or a risky step; a person
+  finishes it in the noVNC view, and the agent carries on in the same session.
+- **QA and visual checks** — screenshots of whole pages, boxes or elements, compared between
+  releases.
 
 ## Features
 
