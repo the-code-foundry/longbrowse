@@ -13,6 +13,25 @@ export class Display {
     this.vncPassword = vncPassword;
     this.procs = [];
     this.starting = null; // in-flight start(), shared by concurrent callers
+    this.viewerWanted = true; // the noVNC web viewer (websockify) — can be switched off on its own
+    this.viewerProc = null;
+  }
+
+  get viewerOn() {
+    return !!this.viewerProc;
+  }
+
+  // Switch only the web viewer: the browser keeps its X display either way.
+  setViewer(on) {
+    this.viewerWanted = !!on;
+    if (on && this.running && !this.viewerProc) this.#startViewer();
+    if (!on && this.viewerProc) { this.viewerProc.kill('SIGTERM'); this.viewerProc = null; }
+    return this.viewerOn;
+  }
+
+  #startViewer() {
+    this.viewerProc = this.#spawn('websockify', ['--web', '/usr/share/novnc', '6080', 'localhost:5999']);
+    this.viewerProc.on('exit', () => { if (this.viewerProc && this.viewerProc.exitCode !== null) this.viewerProc = null; });
   }
 
   get running() {
@@ -34,7 +53,7 @@ export class Display {
     this.#spawn('Xvnc', [':99', '-geometry', this.screen, '-depth', '24', ...sec, '-localhost']);
     for (let i = 0; i < 50 && !existsSync(SOCKET); i++) await new Promise((r) => setTimeout(r, 100));
     if (!existsSync(SOCKET)) { this.stop(); throw new Error('Xvnc did not come up'); }
-    this.#spawn('websockify', ['--web', '/usr/share/novnc', '6080', 'localhost:5999']);
+    if (this.viewerWanted) this.#startViewer();
     process.env.DISPLAY = ':99';
   }
 
@@ -42,10 +61,12 @@ export class Display {
     const p = spawn(cmd, args, { stdio: ['ignore', 'ignore', 'inherit'] });
     p.on('exit', () => { this.procs = this.procs.filter((x) => x !== p); });
     this.procs.push(p);
+    return p;
   }
 
   stop() {
     for (const p of this.procs) p.kill('SIGTERM');
     this.procs = [];
+    this.viewerProc = null;
   }
 }

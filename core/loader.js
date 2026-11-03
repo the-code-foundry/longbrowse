@@ -26,7 +26,8 @@ export function parseIni(text) {
 }
 
 export class Loader {
-  constructor({ pluginsDir, registry, contexts, events, help, api, notifications, human = null, egress = null, dataDir = '/data', log = console.error, pollSeconds = 5, watchEnabled = true }) {
+  constructor({ pluginsDir, registry, contexts, events, help, api, notifications, human = null, egress = null, display = null, dataDir = '/data', log = console.error, pollSeconds = 5, watchEnabled = true }) {
+    this.display = display; // headful only: the Xvnc + noVNC viewer
     Object.assign(this, { pluginsDir, registry, contexts, events, help, api, notifications, human, egress, dataDir, log, pollSeconds, watchEnabled });
     this.mtimes = new Map(); // plugin folder -> newest code mtime (settings files excluded)
     this.plugins = new Map(); // name -> {toolNames: [], abort: AbortController}
@@ -79,6 +80,11 @@ export class Loader {
       config,
       signal: state.abort.signal,
       page: () => this.contexts.page(profile),
+      // the noVNC web viewer (null when headless): switch it, ask its state
+      viewer: this.display ? ((d) => ({
+        set: (on) => d.setViewer(on),
+        get on() { return d.viewerOn; },
+      }))(this.display) : null,
       // this plugin's profile browser: set context options for its next launch, close it
       browser: {
         setOptions: (opts) => this.contexts.setOptions(profile, opts),

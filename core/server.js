@@ -54,7 +54,7 @@ const api = cfg.apiEnabled ? new ApiServer({
     mcp_sessions: transports.size,
   }),
 }) : null;
-const loader = new Loader({ pluginsDir: cfg.pluginsDir, registry, contexts, events, help, api, notifications, human, egress, dataDir: cfg.dataDir, pollSeconds: cfg.pluginPoll, watchEnabled: cfg.pluginWatch });
+const loader = new Loader({ pluginsDir: cfg.pluginsDir, registry, contexts, events, help, api, notifications, human, egress, display, dataDir: cfg.dataDir, pollSeconds: cfg.pluginPoll, watchEnabled: cfg.pluginWatch });
 registry.add('plugins_rescan', {
   description: 'Force a plugin-folder rescan now: loads new folders, reloads changed ones (by mtime), unloads removed ones. The on-demand path when PLUGIN_WATCH=0/PLUGIN_POLL=0.',
   inputSchema: {},
