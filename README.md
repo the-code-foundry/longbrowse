@@ -5,6 +5,9 @@
 A persistent browser for AI agents: one container with Chromium (Playwright), an MCP server
 (streamable HTTP), a REST API, a live noVNC view, and hot-reloaded site plugins.
 
+<p align="center"><a href="https://youtu.be/53bgvNN8wWM"><img src="https://img.youtube.com/vi/53bgvNN8wWM/maxresdefault.jpg" alt="Watch: How longbrowse gives AI agents a browser that remembers (3:46)" width="640"></a><br>
+<sub>▶ Watch the 4-minute intro on YouTube</sub></p>
+
 The idea: your agent keeps long-lived, logged-in browser sessions (web chat apps, webmail,
 Jira, Confluence — any site that allows automation), and site-specific logic lives in small
 plugin folders you can edit while the server runs.
